@@ -56,27 +56,38 @@ void AlignTrafficLights(CefRefPtr<CefWindow> window, float center, float* titleb
   if (!nswindow) return;
   // AppKit reads the title bar height only when it lays out the window frame,
   // which a size change triggers; nudge the width by a point and back.
-  auto relayout = [nswindow]() {
+  auto relayout_with = [nswindow, titlebar_height](float height) {
+    *titlebar_height = height;
     const NSRect frame = nswindow.frame;
     [nswindow setFrame:NSMakeRect(frame.origin.x, frame.origin.y, frame.size.width + 1, frame.size.height) display:NO];
     [nswindow setFrame:frame display:YES];
   };
-  // Where AppKit puts the buttons within a title bar of a given height
-  // differs between releases (Liquid Glass buttons sit lower), so measure
-  // and correct rather than assume.
-  for (int i = 0; i < 3; ++i) {
-    const CGFloat actual = CloseButtonCenter(nswindow);
-    NSLog(@"Sift: title bar %.1f, traffic lights at %.1f, tab row centre %.1f", *titlebar_height, actual, center);
-    if (actual < 0 || std::fabs(actual - center) < 0.5) return;
-    const float previous = *titlebar_height;
-    *titlebar_height = std::max(16.0f, previous + 2 * static_cast<float>(center - actual));
-    relayout();
-    if (std::fabs(CloseButtonCenter(nswindow) - actual) < 0.25) {
-      // The buttons didn't move; keep the height that was in effect.
-      *titlebar_height = previous;
-      relayout();
-      return;
+  // Where AppKit puts the buttons within a title bar of a given height, and
+  // how far they move when it changes, differ between releases (Liquid Glass
+  // buttons follow the bottom of the title bar). Measure two heights and
+  // solve, rather than assume.
+  const float original = *titlebar_height;
+  float height = original;
+  CGFloat actual = CloseButtonCenter(nswindow);
+  float prev_height = height;
+  CGFloat prev_actual = actual;
+  CGFloat slope = 0.5;  // a first guess: buttons centred in the title bar
+  for (int i = 0; i < 4; ++i) {
+    NSLog(@"Sift: title bar %.1f, traffic lights at %.1f, tab row centre %.1f", height, actual, center);
+    if (actual < 0 || std::fabs(actual - center) < 0.5) break;
+    if (i > 0) {
+      if (std::fabs(actual - prev_actual) < 0.25 || height == prev_height) {
+        // The buttons don't follow the height; keep the one that was in effect.
+        relayout_with(original);
+        return;
+      }
+      slope = (actual - prev_actual) / (height - prev_height);
     }
+    prev_height = height;
+    prev_actual = actual;
+    height = std::clamp(static_cast<float>(height + (center - actual) / slope), 16.0f, 120.0f);
+    relayout_with(height);
+    actual = CloseButtonCenter(nswindow);
   }
 }
 
