@@ -212,7 +212,7 @@ export class Toolbar {
     const input = $('input', this.findRow);
     if (input.value !== f.query) input.value = f.query;
     const count = $('.count', this.findRow);
-    count.textContent = f.query ? (f.count ? `${f.active}/${f.count}` : 'No matches') : '';
+    count.textContent = f.query ? (f.count ? `${Math.max(1, f.active)}/${f.count}` : 'No matches') : '';
     count.classList.toggle('is-none', !!f.query && !f.count);
   }
 
@@ -232,6 +232,14 @@ export class Toolbar {
     if (wasHidden !== this.paneRow.hidden) requestAnimationFrame(() => b.layout());
     if (!show) return;
     const [l, r] = b.paneRects();
+    if (this.gripDragging) {
+      // Keep the grip element alive while it holds pointer capture.
+      const segs = this.paneRow.querySelectorAll('.pane-seg');
+      segs[0].style.width = `${l.w - 8}px`;
+      segs[1].style.width = `${r.w - 8}px`;
+      $('.pane-grip', this.paneRow).style.left = `${l.w + 3}px`;
+      return;
+    }
     const seg = (side, rect) => {
       const t = b.tab(side === 'left' ? b.split.left : b.split.right);
       const focused = b.split.focus === side;
@@ -258,6 +266,7 @@ export class Toolbar {
       e.preventDefault();
       grip.setPointerCapture(e.pointerId);
       grip.classList.add('is-dragging');
+      this.gripDragging = true;
       let raf = 0;
       grip.onpointermove = (ev) => {
         cancelAnimationFrame(raf);
@@ -266,7 +275,9 @@ export class Toolbar {
       grip.onpointerup = () => {
         grip.onpointermove = null;
         grip.classList.remove('is-dragging');
+        this.gripDragging = false;
         b.saveSession();
+        this.renderPanes();
       };
     };
   }

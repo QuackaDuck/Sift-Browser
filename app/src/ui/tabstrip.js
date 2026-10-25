@@ -220,7 +220,8 @@ export class TabStrip {
     let zones = null;
     let hot = null;
     const chromeBottom = $('#chrome').getBoundingClientRect().bottom;
-    el.setPointerCapture(e.pointerId);
+    // Listen on the window: growing the UI surface during the drag cancels
+    // pointer capture on the tab element.
 
     const siblings = () => [...container.children].filter((c) => c !== el);
     const onMove = (ev) => {
@@ -239,7 +240,7 @@ export class TabStrip {
         el.style.transform = '';
         if (!ghost) {
           ghost = h('div', { class: 'drag-ghost', html: `${favicon(tab.url, tab.favicon)}<span>${esc(tab.title || hostOf(tab.url))}</span>` });
-          zones = h('div', { class: 'dropzones', html: `<div class="dropzone" data-side="left"><div>${icon('split')}Open on the left</div></div><div class="dropzone" data-side="right"><div>${icon('split')}Open on the right</div></div>` });
+          zones = h('div', { class: 'dropzones', html: `<div class="dropzone" data-side="left"><div>${icon('split')}Left side</div></div><div class="dropzone" data-side="right"><div>${icon('split')}Right side</div></div>` });
           Object.assign(zones.style, { left: '0px', right: '0px', top: `${chromeBottom}px`, bottom: '0px' });
           $('#layer').append(zones, ghost);
           this.app.dragging = true;
@@ -266,9 +267,9 @@ export class TabStrip {
       el.style.transform = `translateX(${targetLeft - el.getBoundingClientRect().left}px)`;
     };
     const onUp = () => {
-      el.removeEventListener('pointermove', onMove);
-      el.removeEventListener('pointerup', onUp);
-      el.removeEventListener('pointercancel', onUp);
+      window.removeEventListener('pointermove', onMove, true);
+      window.removeEventListener('pointerup', onUp, true);
+      window.removeEventListener('blur', onUp);
       el.classList.remove('is-dragging');
       el.style.transform = '';
       this.drag = false;
@@ -287,9 +288,9 @@ export class TabStrip {
         this.b.moveTab(tabId, order.indexOf(tabId));
       }
     };
-    el.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerup', onUp);
-    el.addEventListener('pointercancel', onUp);
+    window.addEventListener('pointermove', onMove, true);
+    window.addEventListener('pointerup', onUp, true);
+    window.addEventListener('blur', onUp);
   }
 }
 

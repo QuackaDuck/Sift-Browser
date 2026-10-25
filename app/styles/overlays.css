@@ -484,16 +484,24 @@ kbd, .kbd {
 .dropzone {
   flex: 1;
   border-radius: var(--r-xl);
-  border: 1.5px dashed var(--line-3);
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);
   display: grid; place-items: center;
-  color: var(--text-2);
-  font-size: var(--t-lg);
-  background: color-mix(in srgb, var(--bg-1) 40%, transparent);
-  transition: background-color var(--d-fast) linear, border-color var(--d-fast) linear, color var(--d-fast) linear;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  transition: background-color var(--d-fast) linear, border-color var(--d-fast) linear;
 }
-.dropzone > div { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.dropzone svg { width: 22px; height: 22px; }
-.dropzone.is-hot { border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text-1); }
+.dropzone > div {
+  display: flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 16px 0 12px;
+  border-radius: var(--r-pill);
+  background: var(--pop);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--line-2);
+  color: var(--text-2);
+  font-size: var(--t-md); font-weight: 500;
+}
+.dropzone svg { width: 16px; height: 16px; color: var(--accent); }
+.dropzone.is-hot { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.dropzone.is-hot > div { color: var(--text-1); background: var(--accent); color: var(--accent-ink); }
+.dropzone.is-hot svg { color: var(--accent-ink); }
 
 /* ---------- Drag ghost ------------------------------------------------ */
 

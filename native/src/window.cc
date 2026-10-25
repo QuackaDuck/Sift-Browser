@@ -400,7 +400,9 @@ void SiftWindow::ApplyLayout() {
     content_layout_->SetFlexForView(tab->view, flex);
   }
   content_layout_->SetFlexForView(divider_, 0);
+  // Flex changes alone don't trigger a layout pass.
   spacer_->InvalidateLayout();
+  content_->InvalidateLayout();
   window_->Layout();
   content_->Layout();
   ApplySurface();
