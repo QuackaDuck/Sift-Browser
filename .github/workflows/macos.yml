@@ -1,0 +1,68 @@
+name: macOS build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/eager-newton-6day03]
+    paths: [native/**, app/**, scripts/**, .github/workflows/macos.yml]
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache CEF
+        uses: actions/cache@v4
+        with:
+          path: third_party/cef
+          key: cef-macosarm64-${{ hashFiles('scripts/fetch-cef.sh') }}
+
+      - name: Fetch CEF
+        run: scripts/fetch-cef.sh macosarm64
+
+      - name: Configure
+        run: cmake -G Xcode -S native -B build -DPROJECT_ARCH=arm64 -DCEF_ROOT="$PWD/third_party/cef"
+
+      - name: Build
+        run: cmake --build build --config Release --target sift -- -quiet
+
+      - name: Locate app
+        id: app
+        run: |
+          app="$(find build -maxdepth 3 -name Sift.app -type d | head -1)"
+          echo "path=$app" >> "$GITHUB_OUTPUT"
+          ls "$app/Contents" "$app/Contents/Frameworks" "$app/Contents/Resources" | head -40
+          du -sh "$app"
+
+      - name: Ad-hoc sign
+        # Not notarized. Apple Silicon requires at least an ad-hoc signature.
+        run: codesign --force --deep --sign - "${{ steps.app.outputs.path }}"
+
+      - name: Smoke test
+        run: |
+          app="${{ steps.app.outputs.path }}"
+          "$app/Contents/MacOS/Sift" https://en.wikipedia.org/wiki/Typography > sift.log 2>&1 &
+          pid=$!
+          sleep 20
+          screencapture -x smoke.png || true
+          if kill -0 $pid 2>/dev/null; then echo "Sift is running"; kill $pid; else echo "Sift exited early"; cat sift.log; exit 1; fi
+          tail -40 sift.log || true
+
+      - name: Package
+        run: ditto -c -k --sequesterRsrc --keepParent "${{ steps.app.outputs.path }}" Sift-macos-arm64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sift-macos-arm64
+          path: Sift-macos-arm64.zip
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test
+          path: |
+            smoke.png
+            sift.log
+          if-no-files-found: ignore

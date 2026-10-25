@@ -1,0 +1,166 @@
+/* Sift design tokens.
+ *
+ * Charcoal neutrals, one icy-blue accent reserved for state (focus, active,
+ * selection, progress). Depth comes from 1px lines and value steps, not
+ * from shadows; shadows are kept for things that genuinely float. */
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter-latin-wght.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: block;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter-latin-ext-wght.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: block;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../fonts/jetbrains-mono-latin-wght.woff2') format('woff2');
+  font-weight: 100 800;
+  font-display: block;
+}
+
+:root {
+  --font: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Type scale: small and deliberate. Chrome text never exceeds 13px. */
+  --t-xs: 10.5px;
+  --t-sm: 11.5px;
+  --t-md: 12.5px;
+  --t-lg: 13.5px;
+  --t-xl: 15px;
+  --t-2xl: 20px;
+  --t-3xl: 28px;
+
+  /* Geometry */
+  --tabrow-h: 40px;
+  --toolbar-h: 42px;
+  --findbar-h: 38px;
+  --panebar-h: 30px;
+  --r-xs: 5px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-pill: 999px;
+  --label: 500 12px/1.2 var(--font);
+
+  /* Motion: quick, physical, never blocking. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --spring: cubic-bezier(0.34, 1.32, 0.64, 1);
+  --d-fast: 90ms;
+  --d-med: 160ms;
+  --d-slow: 240ms;
+}
+
+/* Dark is the default presentation. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-0: #0b0c0e;         /* window base, gaps between panes */
+  --bg-1: #121316;         /* chrome surface */
+  --bg-2: #18191d;         /* raised: active tab, fields */
+  --bg-3: #1e2025;         /* hover */
+  --bg-4: #262830;         /* pressed / selected */
+  --pop: #16171b;          /* floating panels */
+  --pop-2: #1b1d21;
+  --page: #0f1013;         /* internal pages */
+  --field: #1a1b1f;
+  --field-focus: #1d1f24;
+
+  --line: rgba(255, 255, 255, 0.065);
+  --line-2: rgba(255, 255, 255, 0.10);
+  --line-3: rgba(255, 255, 255, 0.16);
+
+  --text-1: #eceef1;
+  --text-2: #a9adb5;
+  --text-3: #72767f;
+  --text-4: #4c4f57;
+
+  --accent: #9ed2f2;
+  --accent-2: #c6e5f8;
+  --accent-ink: #08141c;     /* text on accent */
+  --accent-dim: rgba(158, 210, 242, 0.12);
+  --accent-soft: rgba(158, 210, 242, 0.20);
+  --accent-line: rgba(158, 210, 242, 0.55);
+
+  --ok: #8fd3a9;
+  --warn: #e7c47c;
+  --danger: #ef8b80;
+  --danger-dim: rgba(239, 139, 128, 0.12);
+
+  --scrim: rgba(6, 7, 9, 0.55);
+  --shadow-pop: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 12px 32px -8px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-tab: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.35);
+  --favicon-bg: #23252b;
+  --hl: rgba(158, 210, 242, 0.95);
+  --select-bg: rgba(158, 210, 242, 0.28);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg-0: #dfe0e3;
+  --bg-1: #ececee;
+  --bg-2: #fbfbfc;
+  --bg-3: #e2e3e6;
+  --bg-4: #d7d9dd;
+  --pop: #fbfbfc;
+  --pop-2: #f3f3f5;
+  --page: #f6f6f7;
+  --field: #f8f8f9;
+  --field-focus: #ffffff;
+
+  --line: rgba(14, 18, 26, 0.075);
+  --line-2: rgba(14, 18, 26, 0.12);
+  --line-3: rgba(14, 18, 26, 0.2);
+
+  --text-1: #15171b;
+  --text-2: #4f535b;
+  --text-3: #80848c;
+  --text-4: #a9acb2;
+
+  --accent: #1b78b5;
+  --accent-2: #145e8f;
+  --accent-ink: #ffffff;
+  --accent-dim: rgba(27, 120, 181, 0.09);
+  --accent-soft: rgba(27, 120, 181, 0.16);
+  --accent-line: rgba(27, 120, 181, 0.55);
+
+  --ok: #2c8a55;
+  --warn: #a8761b;
+  --danger: #c4473a;
+  --danger-dim: rgba(196, 71, 58, 0.09);
+
+  --scrim: rgba(20, 22, 28, 0.28);
+  --shadow-pop: 0 0 0 1px rgba(14, 18, 26, 0.08), 0 14px 34px -10px rgba(14, 18, 26, 0.28), 0 2px 6px rgba(14, 18, 26, 0.08);
+  --shadow-tab: 0 1px 2px rgba(14, 18, 26, 0.08), 0 0 0 1px rgba(14, 18, 26, 0.06);
+  --favicon-bg: #e4e5e8;
+  --hl: #0f5f93;
+  --select-bg: rgba(27, 120, 181, 0.22);
+}
+
+/* Private windows: a deeper base and a cooler line; same accent. */
+:root[data-private='true'] {
+  --bg-0: #08090b;
+  --bg-1: #0d0e11;
+  --bg-2: #14161a;
+  --line: rgba(158, 210, 242, 0.07);
+}
+:root[data-private='true'][data-theme='light'] {
+  --bg-0: #cfd2d7;
+  --bg-1: #dcdee2;
+  --bg-2: #f2f3f5;
+  --line: rgba(14, 40, 70, 0.1);
+}
+
+:root[data-density='comfortable'] {
+  --tabrow-h: 44px;
+  --toolbar-h: 46px;
+}
