@@ -1,0 +1,33 @@
+name: SDK probe (temporary)
+
+on:
+  pull_request:
+    paths: [.github/workflows/sdk-probe.yml]
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: Xcodes and SDKs
+        run: |
+          sw_vers
+          ls -d /Applications/Xcode*.app || true
+          xcode-select -p
+          for x in /Applications/Xcode*.app; do
+            echo "== $x"; DEVELOPER_DIR="$x/Contents/Developer" xcrun --sdk macosx --show-sdk-version 2>/dev/null || true
+          done
+      - name: Glass and new window API in the newest SDK
+        run: |
+          for x in /Applications/Xcode*.app; do
+            sdk="$(DEVELOPER_DIR="$x/Contents/Developer" xcrun --sdk macosx --show-sdk-path 2>/dev/null)" || continue
+            echo "=================== $sdk"
+            h="$sdk/System/Library/Frameworks/AppKit.framework/Headers"
+            grep -n -i "glass" "$h"/NSWindow.h "$h"/NSToolbar.h "$h"/NSTitlebarAccessoryViewController.h "$h"/NSApplication.h 2>/dev/null | head -60
+            grep -n "macos(2[67]" "$h"/NSWindow.h "$h"/NSToolbar.h 2>/dev/null | head -80
+            ls "$h" | grep -i glass || true
+          done
