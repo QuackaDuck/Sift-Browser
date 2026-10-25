@@ -38,12 +38,14 @@ std::string HomeDir() {
 
 std::string ResourceDir() {
   CefString dir;
+  if (!CefGetPath(PK_DIR_EXE, dir)) return ".";
 #if defined(__APPLE__)
-  // Contents/Resources inside the app bundle.
-  if (CefGetPath(PK_DIR_RESOURCES, dir)) return dir.ToString();
+  // Sift.app/Contents/MacOS -> Sift.app/Contents/Resources. (PK_DIR_RESOURCES
+  // is the CEF framework's own Resources folder, not the app bundle's.)
+  return dir.ToString() + "/../Resources";
+#else
+  return dir.ToString();
 #endif
-  if (CefGetPath(PK_DIR_EXE, dir)) return dir.ToString();
-  return ".";
 }
 
 std::string UserDataRoot() {
