@@ -30,7 +30,7 @@ export function renderNewTab(app, page) {
         </div></section>` : ''}
       ${sites.length ? `<section class="ntp-section"><h4>Frequently visited</h4><div class="tiles">
         ${sites.map((x) => `<a class="tile" data-url="${esc(x.url)}" title="${esc(x.title || x.host)}">
-          <span class="ic">${favicon(x.url, x.favicon)}</span><span class="lbl">${esc(label(x.host))}</span>
+          <span class="ic">${favicon(x.url, x.favicon)}</span><span class="lbl">${esc(tileLabel(x))}</span>
           <button class="ibtn sm rm" data-hide="${esc(x.host)}" aria-label="Remove from frequent sites">${icon('close')}</button></a>`).join('')}
       </div></section>` : ''}
       ${moments.length ? `<section class="ntp-section"><h4>Moments <button data-a="moments">See all</button></h4><div class="ntp-moments">
@@ -68,9 +68,17 @@ export function renderNewTab(app, page) {
   };
 }
 
+function tileLabel(site) {
+  // A short root-page title ("The Verge", "Hacker News") beats a host fragment.
+  const t = (site.root && site.title ? site.title.split(/\s[-|–—·:]\s/)[0] : '').trim();
+  return t && t.length <= 16 ? t : label(site.host);
+}
+
 function label(host) {
-  const parts = host.split('.');
-  const name = parts.length > 2 && ['en', 'www', 'docs', 'developer', 'app', 'm'].includes(parts[0]) ? parts[1] : parts[0];
+  // The site's own name: the label before the public suffix.
+  const parts = host.replace(/:\d+$/, '').split('.');
+  const twoPartSuffix = parts.length > 2 && /^(co|com|org|net|ac|gov|edu)$/.test(parts[parts.length - 2]);
+  const name = parts[parts.length - (twoPartSuffix ? 3 : 2)] || parts[0];
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 

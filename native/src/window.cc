@@ -159,7 +159,14 @@ class DevToolsObserver : public CefDevToolsMessageObserver {
     window_->devtools_pending_.erase(it);
     CefRefPtr<CefValue> value =
         CefParseJSON(std::string(static_cast<const char*>(result), result_size), JSON_PARSER_RFC);
-    done(success, value && value->GetType() == VTYPE_DICTIONARY ? value->GetDictionary() : nullptr);
+    CefRefPtr<CefDictionaryValue> dict =
+        value && value->GetType() == VTYPE_DICTIONARY ? value->GetDictionary() : nullptr;
+    // Continue outside the observer callback: continuations may issue more
+    // DevTools calls, which must not re-enter the observer list.
+    CefPostTask(TID_UI, base::BindOnce(
+                            [](std::function<void(bool, CefRefPtr<CefDictionaryValue>)> fn, bool ok,
+                               CefRefPtr<CefDictionaryValue> d) { fn(ok, d); },
+                            std::move(done), success, dict));
   }
 
  private:
@@ -593,7 +600,7 @@ void SiftWindow::CaptureVisible(std::function<void(CefRefPtr<CefListValue>)> don
   }
   // Never let a stuck renderer hold the UI hostage.
   CefPostDelayedTask(TID_UI, base::BindOnce([](std::function<void()> fn) { fn(); }, std::function<void()>(finish)),
-                     350);
+                     600);
 }
 
 void SiftWindow::Evaluate(Tab* tab, const std::string& expression, std::function<void(CefRefPtr<CefValue>)> done) {
@@ -741,16 +748,21 @@ bool SiftWindow::Dispatch(const std::string& cmd, Args args, QueryCallback cb) {
     d->SetString("chromium", std::to_string(CHROME_VERSION_MAJOR) + "." + std::to_string(CHROME_VERSION_MINOR) + "." +
                                  std::to_string(CHROME_VERSION_BUILD) + "." + std::to_string(CHROME_VERSION_PATCH));
     d->SetInt("trackerDomains", static_cast<int>(TrackerList::Get().size()));
+    d->SetInt("width", window_->GetBounds().width);
+    d->SetInt("height", window_->GetBounds().height);
     d->SetString("downloadsDir", DownloadsDir());
     d->SetString("dataDir", options_.incognito ? "(in memory)" : ProfileDir(options_.profile));
     CefRefPtr<CefListValue> urls = CefListValue::Create();
     for (const auto& url : options_.open_urls) urls->SetString(urls->GetSize(), url);
     options_.open_urls.clear();
     d->SetList("openUrls", urls);
-    // A reloaded UI (e.g. after a renderer crash) adopts the live tabs.
-    CefRefPtr<CefListValue> live = CefListValue::Create();
-    for (const auto& [tab_id, t] : tabs_) live->SetString(live->GetSize(), tab_id);
-    d->SetList("liveTabs", live);
+    // A reloaded UI (e.g. after its renderer crashed) restores the saved
+    // session itself, so tabs from the previous UI instance are closed.
+    std::vector<std::string> stale;
+    for (const auto& [tab_id, t] : tabs_) stale.push_back(tab_id);
+    for (const auto& tab_id : stale) CloseTab(tab_id);
+    panes_.clear();
+    ApplyLayout();
     ReplyJson(cb, Val(d));
     return true;
   }

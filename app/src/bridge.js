@@ -73,7 +73,7 @@ class PreviewBridge extends Emitter {
       windowId: 'w1', profile: 'Default', incognito: new URLSearchParams(location.search).has('private'),
       platform: /Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'win' : 'linux',
       engine: 'Preview (iframes)', chromium: (ua.match(/Chrome\/([\d.]+)/) || [])[1] || 'n/a',
-      trackerDomains: 0, downloadsDir: '~/Downloads', dataDir: 'localStorage', openUrls: [], liveTabs: [], preview: true,
+      trackerDomains: 0, downloadsDir: '~/Downloads', dataDir: 'localStorage', openUrls: [], preview: true,
     };
   }
 

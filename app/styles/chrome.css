@@ -200,13 +200,15 @@ input::selection, textarea::selection, .selectable::selection { background: var(
   white-space: nowrap;
   overflow: hidden;
   font-size: var(--t-md);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent);
 }
+/* The close button overlays the title's end; fade the title out under it. */
+.tab:hover .tab-title, .tab.is-active .tab-title { mask-image: linear-gradient(90deg, #000 calc(100% - 34px), transparent calc(100% - 18px)); }
 .tab-indicators { display: flex; gap: 2px; color: var(--text-3); }
 .tab-indicators svg { width: 13px; height: 13px; }
 .tab-indicators .is-live { color: var(--danger); }
 .tab-close {
-  flex: none;
+  position: absolute; right: 5px; top: 5px;
   width: 20px; height: 20px;
   display: grid; place-items: center;
   border-radius: 50%;
@@ -222,7 +224,8 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 .tab.is-narrow { padding: 0; justify-content: center; gap: 0; }
 .tab.is-narrow .tab-title, .tab.is-narrow .tab-indicators { display: none; }
 .tab.is-narrow:not(.is-active) .tab-close { display: none; }
-.tab.is-narrow.is-active { padding: 0 3px 0 8px; justify-content: space-between; }
+.tab.is-narrow.is-active { padding: 0 3px 0 8px; justify-content: flex-start; }
+.tab.is-narrow:hover .tab-close { display: none; }
 
 .tab.is-pinned {
   flex: 0 0 34px; width: 34px;

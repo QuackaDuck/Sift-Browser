@@ -79,6 +79,13 @@ test('inline completion follows the typed prefix', () => {
   assert.equal(rank('fig.', ctx).autocomplete.completion, 'fig.io');
 });
 
+test('inline completion skips a leading subdomain', () => {
+  const c = { ...ctx, history: [{ url: 'https://en.wikipedia.org/wiki/Typography', title: 'Typography', visits: 5, lastVisit: NOW }] };
+  const { autocomplete, results } = rank('wiki', c);
+  assert.equal(autocomplete.completion, 'wikipedia.org');
+  assert.equal(results[0].url, 'https://en.wikipedia.org/');
+});
+
 test('the active tab is never offered as a switch target', () => {
   const { results } = rank('hacker', ctx);
   assert.ok(!results.some((r) => r.kind === KIND.TAB && r.tabId === 't0'));

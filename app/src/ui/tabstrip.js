@@ -317,13 +317,19 @@ export class TabPreview {
   leave() {
     clearTimeout(this.timer);
     clearTimeout(this.leaveTimer);
-    this.leaveTimer = setTimeout(() => this.hide(), 140);
+    // Growing the UI surface makes Chromium send a synthetic leave; only hide
+    // when the pointer has really moved off the tab.
+    this.leaveTimer = setTimeout(() => {
+      if (this.anchorEl?.isConnected && this.anchorEl.matches(':hover')) return;
+      this.hide();
+    }, 140);
   }
 
   show(tabId, el, instant) {
     const t = this.b.tab(tabId);
     if (!t || !el.isConnected || document.querySelector('#layer .pop:not(.preview)')) return;
     this.currentId = tabId;
+    this.anchorEl = el;
     this.shownAt = Date.now();
     const internal = isInternal(t.url);
     const status = t.loading ? 'Loading' : t.discarded ? 'Sleeping' : tabId === this.b.activeId ? 'Current' : `Viewed ${ago(t.lastActive)}`;

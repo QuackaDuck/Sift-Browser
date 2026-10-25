@@ -44,9 +44,17 @@ export class Layer {
     this.stack.push(o);
     if (o.cover) {
       // Keep the element invisible until the surface covers the window, so it
-      // never flashes clipped; focusable elements still receive keystrokes.
-      o.el.style.visibility = 'hidden';
-      this.updateSurface().then(() => { if (this.stack.includes(o)) o.el.style.visibility = ''; });
+      // never flashes half-drawn.
+      // The scrim waits too: compositor animations started while the UI is
+      // strip-sized don't resume after the resize.
+      // Clipped rather than hidden so inputs inside can take focus at once.
+      o.el.classList.add('is-pending');
+      if (o.scrimEl) o.scrimEl.style.display = 'none';
+      this.updateSurface().then(() => {
+        if (!this.stack.includes(o)) return;
+        o.el.classList.remove('is-pending');
+        if (o.scrimEl) o.scrimEl.style.display = '';
+      });
     }
     return o;
   }
@@ -131,7 +139,9 @@ export class Layer {
       if (!shot) continue;
       const img = new Image();
       img.src = shot.data;
-      Object.assign(img.style, { left: `${r.x}px`, top: `${r.y - this.browser.chromeHeight}px`, width: `${r.w}px`, height: `${r.h}px` });
+      // Height follows the capture's aspect ratio: while the UI is only the
+      // strip, it can't measure the window height itself.
+      Object.assign(img.style, { left: `${r.x}px`, top: `${r.y - this.browser.chromeHeight}px`, width: `${r.w}px`, height: 'auto' });
       imgs.push(img);
     }
     await Promise.all(imgs.map((i) => i.decode().catch(() => {})));

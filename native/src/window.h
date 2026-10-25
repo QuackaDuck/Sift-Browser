@@ -70,6 +70,7 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   CefRefPtr<ContentClient> NewContentClient(const std::string& tab_id);
   bool IsUiBrowser(CefRefPtr<CefBrowser> browser) const;
   bool incognito() const { return options_.incognito; }
+  bool is_closing() const { return closing_; }
 
   // --- Called by UiClient --------------------------------------------------
   void OnUiBrowserCreated(CefRefPtr<CefBrowser> browser);

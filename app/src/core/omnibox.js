@@ -224,8 +224,12 @@ function navigationalHit(raw, ctx, now) {
     let u;
     try { u = new URL(url); } catch { return; }
     if (!/^https?:$/.test(u.protocol)) return;
-    const key = u.hostname.replace(/^www\./, '') + (u.port ? `:${u.port}` : '');
-    if (!key.startsWith(typed)) return;
+    const host = u.hostname.replace(/^www\./, '') + (u.port ? `:${u.port}` : '');
+    // "wiki" should complete en.wikipedia.org too: also try without the first label.
+    const labels = host.split('.');
+    const bare = labels.length >= 3 ? labels.slice(1).join('.') : null;
+    const key = host.startsWith(typed) ? host : bare && bare.startsWith(typed) ? bare : null;
+    if (!key) return;
     const o = origins.get(key) || { host: key, weight: 0, url: `${u.protocol}//${u.host}/`, title: '', favicon: null, isRoot: false };
     o.weight += weight;
     if (u.pathname === '/' && !o.isRoot) { o.isRoot = true; o.title = title || o.title; }

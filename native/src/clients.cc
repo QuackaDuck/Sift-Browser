@@ -266,7 +266,11 @@ void ContentClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   if (window_) window_->OnTabBrowserCreated(tab_id_, browser);
 }
 
-bool ContentClient::DoClose(CefRefPtr<CefBrowser> browser) { return false; }
+bool ContentClient::DoClose(CefRefPtr<CefBrowser> browser) {
+  // Returning false would ask the top-level window to close. That's only
+  // right when the window itself is closing; closing a tab closes just it.
+  return window_ && !window_->is_closing();
+}
 
 void ContentClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   if (window_) window_->OnTabBrowserClosed(tab_id_);

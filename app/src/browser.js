@@ -81,6 +81,7 @@ export class Browser {
 
   async init() {
     this.info = await this.bridge.send('ready');
+    if (this.info.height) this.windowHeight = this.info.height;
     const html = document.documentElement;
     html.dataset.platform = this.info.platform;
     html.dataset.private = String(!!this.info.incognito);
@@ -141,19 +142,21 @@ export class Browser {
     for (const t of session.tabs) {
       const id = this.nextId();
       idMap.set(t.id, id);
-      this.tabs.push({ ...this.blankTab(id, t.url), title: t.title, favicon: t.favicon, pinned: !!t.pinned, lastActive: t.lastActive || 0, discarded: !isInternal(t.url), scroll: t.scroll });
+      this.tabs.push({ ...this.blankTab(id, t.url), title: t.title, favicon: t.favicon, pinned: !!t.pinned, lastActive: t.lastActive || 0, createdAt: t.createdAt || t.lastActive || Date.now(), discarded: !isInternal(t.url), scroll: t.scroll });
       if (!isInternal(t.url)) this.bridge.send('tab.create', { id, url: t.url, lazy: true, scroll: t.scroll || -1 });
     }
     this.activeId = idMap.get(session.activeId) || this.tabs[this.tabs.length - 1]?.id;
     if (session.split && idMap.get(session.split.left) && idMap.get(session.split.right)) {
       this.split = { ...session.split, left: idMap.get(session.split.left), right: idMap.get(session.split.right) };
     }
+    // Whatever is visible loads now.
+    for (const id of this.visibleIds()) { const t = this.tab(id); if (t) t.discarded = false; }
     this.layout();
   }
 
   persistSession() {
     if (this.info?.incognito) return;
-    const tabs = this.tabs.map((t) => ({ id: t.id, url: t.url, title: t.title, favicon: t.favicon && t.favicon.length < 12000 ? t.favicon : null, pinned: t.pinned, lastActive: t.lastActive }));
+    const tabs = this.tabs.map((t) => ({ id: t.id, url: t.url, title: t.title, favicon: t.favicon && t.favicon.length < 12000 ? t.favicon : null, pinned: t.pinned, lastActive: t.lastActive, createdAt: t.createdAt }));
     this.write(`session-${this.info.windowId}`, { tabs, activeId: this.activeId, split: this.split, savedAt: Date.now() });
   }
 
@@ -599,9 +602,14 @@ export class Browser {
     if ('error' in d && d.error) tab.loading = false;
     if (d.url && d.url !== prevUrl) {
       tab.error = null;
-      if (d.url !== prevUrl && hostOf(d.url) !== hostOf(prevUrl)) tab.favicon = d.favicon || null;
-      this.recordVisit(tab);
+      if (hostOf(d.url) !== hostOf(prevUrl)) tab.favicon = d.favicon || null;
       if (this.find) this.find = null;
+    }
+    // Sift sets tab.url optimistically when navigating, so compare against the
+    // last URL recorded for this tab rather than the previous tab.url.
+    if (d.url && d.url !== tab.recordedUrl) {
+      tab.recordedUrl = d.url;
+      this.recordVisit(tab);
     }
     if (d.title !== undefined) this.updateHistoryTitle(tab);
     if (d.favicon) this.updateHistoryFavicon(tab);

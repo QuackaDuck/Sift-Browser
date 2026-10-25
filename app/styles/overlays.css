@@ -13,6 +13,7 @@
 
 #layer { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
 #layer > * { pointer-events: auto; }
+#layer > .is-pending { clip-path: inset(0 0 100% 0); animation: none !important; }
 .scrim {
   position: absolute; inset: 0;
   background: var(--scrim);
@@ -208,9 +209,9 @@ kbd, .kbd {
 /* ---------- Tab search ------------------------------------------------ */
 
 .tabsearch {
-  left: 50%; top: 58px;
+  left: 50%; top: 96px;
   width: min(860px, calc(100vw - 48px));
-  height: min(600px, calc(100vh - 96px));
+  height: min(600px, calc(100vh - 130px));
   margin-left: calc(min(860px, calc(100vw - 48px)) / -2);
   display: flex; flex-direction: column;
 }
