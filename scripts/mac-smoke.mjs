@@ -69,7 +69,14 @@ const geo = await page.evaluate(() => {
 });
 console.log('window at', geo.sx, geo.sy, 'size', geo.w, geo.h, 'dpr', geo.dpr);
 
-// 1. Traffic lights centred on the tab row.
+// 1. Traffic lights centred on the tab row. A system prompt on the CI
+// machine can leave Sift inactive (grey lights), so bring it forward by
+// clicking the active tab first.
+const active = await page.evaluate(() => {
+  const r = document.querySelector('.tab.is-active, .tab[aria-selected="true"]')?.getBoundingClientRect();
+  return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
+});
+if (active) { click(geo.sx + active.x, geo.sy + active.y); await sleep(500); }
 let img = grab();
 const scale = img.width / (await page.evaluate(() => screen.width));
 const lightsY = closeButtonY(img, scale, { x: geo.sx, y: geo.sy, w: 60, h: 70 });
