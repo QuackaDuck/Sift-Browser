@@ -10,16 +10,19 @@
 
 ## Visual language
 
-- **Palette.** Charcoal neutrals in five value steps (`--bg-0` to `--bg-4`) and a single icy-blue accent (`#9ed2f2` dark, `#1b78b5` light). The accent is used only for state: focus rings, the selected pane, progress, primary buttons and toggles. Never decoration, and no gradients except the loading bar.
-- **Lines over shadows.** Structure comes from 1px lines (`--line`, `--line-2`, `--line-3`) and value steps. Shadows appear only on things that float: menus, previews, tab search.
-- **Rounded, not bubbly.** Fields, buttons, segmented controls and toggles are pills; icon buttons are circles; tabs use 11px corners; panels 18px. Content rows use 10–14px.
-- **Type.** Inter (variable) for everything; JetBrains Mono only for URLs, keycaps and technical metadata (data folder, byte counts). Chrome text stays at 13px or below; section headings are sentence case at weight 500–600, never all-caps.
-- **Icons.** A custom 16px set (`app/src/ui/icons.js`) with 1.4px strokes, round joins and shared corner radii. The Sift mark is three bars of narrowing width, like a sieve, with the last bar in the accent. It's the app icon, the internal-page favicon and the site button on Sift's own pages.
-- **Light and dark.** Both are first-class token sets. Private windows darken the base and tint the lines.
+- **Palette.** Neutral greys in five value steps (`--bg-0` to `--bg-4`) in both appearances, and no colour accent. Focus, selection, the active tab and primary buttons are shown with contrast (a lighter surface, a darker hairline, a heavier weight), the way macOS does it.
+- **Lines over shadows.** Structure comes from hairlines and value steps. Shadows appear only on things that float: the active tab, menus, previews, tab search.
+- **Rounded, not bubbly.** Fields, buttons, segmented controls and toggles are pills; icon buttons are circles; tabs use 11px corners; panels 18px.
+- **Type.** The system font: SF Pro on macOS, Segoe UI Variable on Windows, and bundled Inter on Linux. There is no monospace anywhere. Chrome text stays at 13px or below; headings are sentence case at weight 600.
+- **Icons.** A custom 16px set (`app/src/ui/icons.js`) with 1.4px strokes and round joins. The Sift mark is three bars of narrowing width, like a sieve.
+- **A real Mac window** with native traffic lights, corners and shadow. Sift's tab row sits in the transparent title bar.
 
 ## Motion
 
-- **Quick.** 90 ms for colour, 160 ms for panels, 240 ms for tab insertion, with ease-out curves and a slight spring on toggles and the notice pill.
+- **The active tab is one surface that slides.** Switching tabs springs the highlight across (340 ms), rather than blinking one tab off and another on.
+- **Tabs open by growing and close by collapsing,** and their neighbours slide over to make room.
+- **The New Tab page settles in:** the search box, sections and site tiles fade up in a short stagger. It only animates when you arrive, not when its data refreshes.
+- **Panels and the address bar results** scale in from just under their anchor (220 ms) and fade out faster than they arrive. Tab search grows from the centre.
 - **Never in the way.** Nothing animates on navigation, and keyboard input is never delayed. Reduced-motion users get 1 ms durations.
 - **Previews feel warm.** The first hover waits 520 ms; moving to the next tab within 700 ms shows its preview immediately.
 

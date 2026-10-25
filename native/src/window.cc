@@ -35,17 +35,6 @@ constexpr char kPlatform[] = "mac";
 constexpr char kPlatform[] = "linux";
 #endif
 
-class SpacerDelegate : public CefPanelDelegate {
- public:
-  explicit SpacerDelegate(const int* height) : height_(height) {}
-  CefSize GetPreferredSize(CefRefPtr<CefView> view) override { return CefSize(0, *height_); }
-  CefSize GetMinimumSize(CefRefPtr<CefView> view) override { return CefSize(0, *height_); }
-  CefSize GetMaximumSize(CefRefPtr<CefView> view) override { return CefSize(0, *height_); }
-
- private:
-  const int* height_;
-  IMPLEMENT_REFCOUNTING(SpacerDelegate);
-};
 
 class DividerDelegate : public CefPanelDelegate {
  public:
@@ -83,9 +72,18 @@ class StatusDelegate : public CefButtonDelegate {
   IMPLEMENT_REFCOUNTING(StatusDelegate);
 };
 
+// The UI browser sits at the top of the window's box layout. Its preferred
+// height is the chrome strip; when it covers the window it takes the flex.
 class UiViewDelegate : public CefBrowserViewDelegate {
  public:
+  explicit UiViewDelegate(const int* height) : height_(height) {}
   cef_runtime_style_t GetBrowserRuntimeStyle() override { return CEF_RUNTIME_STYLE_ALLOY; }
+  // Width 1, not 0: CEF treats a size with a zero side as "no preference".
+  CefSize GetPreferredSize(CefRefPtr<CefView> view) override { return CefSize(1, *height_); }
+  CefSize GetMinimumSize(CefRefPtr<CefView> view) override { return CefSize(1, *height_); }
+
+ private:
+  const int* height_;
   IMPLEMENT_REFCOUNTING(UiViewDelegate);
 };
 
@@ -217,10 +215,9 @@ CefRect SiftWindow::GetInitialBounds(CefRefPtr<CefWindow> window) {
   return CefRect(area.x + (area.width - w) / 2 + offset, area.y + (area.height - h) / 2 + offset, w, h);
 }
 
-bool SiftWindow::GetTitlebarHeight(CefRefPtr<CefWindow> window, float* titlebar_height) {
-  *titlebar_height = 38;  // centre the macOS traffic lights on the tab row
-  return true;
-}
+#if !defined(__APPLE__)
+void ConfigureNativeWindow(CefRefPtr<CefWindow> window) {}
+#endif
 
 void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   CEF_REQUIRE_UI_THREAD();
@@ -233,8 +230,6 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   vertical.horizontal = false;
   window_layout_ = window_->SetToBoxLayout(vertical);
 
-  spacer_ = CefPanel::CreatePanel(new SpacerDelegate(&chrome_height_));
-  spacer_->SetBackgroundColor(kWindowColor);
   content_ = CefPanel::CreatePanel(nullptr);
   content_->SetBackgroundColor(kWindowColor);
   CefBoxLayoutSettings horizontal;
@@ -245,16 +240,16 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   divider_->SetVisible(false);
   content_->AddChildView(divider_);
 
-  window_->AddChildView(spacer_);
-  window_->AddChildView(content_);
-  window_layout_->SetFlexForView(content_, 1);
-
+  // The UI is an ordinary child view, not an overlay: on macOS overlays are
+  // child windows stacked above the native traffic lights and would hide them.
   ui_client_ = new UiClient(this);
   CefBrowserSettings ui_settings;
   ui_settings.background_color = kWindowColor;
   ui_view_ = CefBrowserView::CreateBrowserView(ui_client_, AppUrl(), ui_settings, nullptr, context_,
-                                               new UiViewDelegate());
-  ui_overlay_ = window_->AddOverlayView(ui_view_, CEF_DOCKING_MODE_CUSTOM, true);
+                                               new UiViewDelegate(&chrome_height_));
+  window_->AddChildView(ui_view_);
+  window_->AddChildView(content_);
+  window_layout_->SetFlexForView(content_, 1);
 
   // Link-hover status text: a native overlay so it can sit over web content
   // without growing the UI surface.
@@ -275,8 +270,8 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   }
 
   ApplySurface();
-  ui_overlay_->SetVisible(true);
   window_->Show();
+  ConfigureNativeWindow(window_);
   ui_view_->RequestFocus();
 }
 
@@ -286,7 +281,6 @@ void SiftWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   tabs_.clear();
   ui_view_ = nullptr;
   ui_browser_ = nullptr;
-  ui_overlay_ = nullptr;
   status_overlay_ = nullptr;
   window_ = nullptr;
   if (--g_window_count == 0) CefQuitMessageLoop();
@@ -314,7 +308,6 @@ void SiftWindow::MaybeFinishClose() {
 // --- Geometry ---------------------------------------------------------------
 
 void SiftWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window, const CefRect& new_bounds) {
-  ApplySurface();
   if (!ui_ready_) return;
   auto d = NewDict();
   d->SetBool("maximized", window_->IsMaximized());
@@ -324,9 +317,7 @@ void SiftWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window, const CefRec
   Emit("window.state", d);
 }
 
-void SiftWindow::OnLayoutChanged(CefRefPtr<CefView> view, const CefRect& new_bounds) {
-  if (window_ && view->IsSame(window_)) ApplySurface();
-}
+void SiftWindow::OnLayoutChanged(CefRefPtr<CefView> view, const CefRect& new_bounds) {}
 
 void SiftWindow::OnWindowActivationChanged(CefRefPtr<CefWindow> window, bool active) {
   if (!ui_ready_) return;
@@ -337,27 +328,25 @@ void SiftWindow::OnWindowActivationChanged(CefRefPtr<CefWindow> window, bool act
 
 bool SiftWindow::OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) { return false; }
 
+// strip: UI at chrome height, web content below.
+// cover: UI fills the window over a snapshot of the content, which is hidden
+//        (the snapshot is identical, so hiding it isn't visible).
+// full:  UI fills the window for Sift's own pages.
 void SiftWindow::ApplySurface() {
-  if (!window_ || !ui_overlay_) return;
-  const CefRect bounds = window_->GetBounds();
+  if (!window_ || !ui_view_) return;
   const bool fullscreen_tab = !fullscreen_tab_.empty();
-  if (fullscreen_tab) {
-    ui_overlay_->SetVisible(false);
-    return;
-  }
-  if (surface_ == "strip") {
-    ui_overlay_->SetBounds(CefRect(0, 0, bounds.width, chrome_height_));
-  } else {
-    ui_overlay_->SetBounds(CefRect(0, 0, bounds.width, bounds.height));
-  }
-  ui_overlay_->SetVisible(true);
+  const bool ui_fills = !fullscreen_tab && surface_ != "strip";
+  ui_view_->SetVisible(!fullscreen_tab);
+  content_->SetVisible(!ui_fills);
+  window_layout_->SetFlexForView(ui_view_, ui_fills ? 1 : 0);
+  ui_view_->InvalidateLayout();
+  window_->Layout();
   if (status_overlay_ && surface_ != "strip") status_overlay_->SetVisible(false);
 }
 
 void SiftWindow::SetSurface(const std::string& mode) {
   if (mode != "strip" && mode != "cover" && mode != "full") return;
   surface_ = mode;
-  content_->SetVisible(mode != "full");
   ApplySurface();
 }
 
@@ -374,7 +363,6 @@ void SiftWindow::EnsureBrowser(Tab* tab) {
 
 void SiftWindow::ApplyLayout() {
   if (!window_) return;
-  spacer_->SetVisible(fullscreen_tab_.empty());
   std::vector<std::string> visible = fullscreen_tab_.empty() ? panes_ : std::vector<std::string>{fullscreen_tab_};
   for (const auto& id : visible) {
     if (Tab* tab = FindTab(id)) EnsureBrowser(tab);
@@ -401,11 +389,9 @@ void SiftWindow::ApplyLayout() {
   }
   content_layout_->SetFlexForView(divider_, 0);
   // Flex changes alone don't trigger a layout pass.
-  spacer_->InvalidateLayout();
   content_->InvalidateLayout();
-  window_->Layout();
-  content_->Layout();
   ApplySurface();
+  content_->Layout();
 }
 
 // --- Tabs -------------------------------------------------------------------

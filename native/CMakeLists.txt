@@ -36,6 +36,10 @@ set(SIFT_COMMON_SRCS
   src/window.cc src/window.h
 )
 
+if(OS_MAC)
+  list(APPEND SIFT_COMMON_SRCS src/window_mac.mm)
+endif()
+
 SET_CEF_TARGET_OUT_DIR()
 
 if(OS_LINUX)

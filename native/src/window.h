@@ -3,15 +3,16 @@
 // Layout (CEF Views):
 //
 //   CefWindow (frameless, vertical BoxLayout)
-//   ├── chrome spacer   fixed height = UI strip height reported by the UI
+//   ├── UI browser      sift://app/index.html; height = the UI's chrome strip
 //   └── content panel   horizontal BoxLayout: [pane A] [divider] [pane B]
 //                       one CefBrowserView per tab, only visible panes shown
-//   └── overlay: UI browser (sift://app/index.html), CEF_DOCKING_MODE_CUSTOM
 //
-// The UI browser is an overlay so it can grow over web content for menus,
-// the address bar dropdown, tab search and previews. CEF Views cannot make a
-// windowed browser transparent, so before growing ("cover" mode) the host
-// captures the visible panes and the UI paints them as its backdrop.
+// For menus, the address bar dropdown, tab search and previews the UI grows
+// to fill the window ("cover"). CEF Views cannot make a browser transparent,
+// so the host first captures the visible panes, the UI paints them as its
+// backdrop, and the content panel is hidden behind that identical picture.
+// The UI is a plain child view rather than an overlay because on macOS
+// overlays are child windows that would cover the native window buttons.
 #ifndef SIFT_WINDOW_H_
 #define SIFT_WINDOW_H_
 
@@ -33,6 +34,10 @@
 #include "clients.h"
 
 namespace sift {
+
+// Platform window styling after creation (macOS: transparent, full-height
+// title bar). A no-op elsewhere.
+void ConfigureNativeWindow(CefRefPtr<CefWindow> window);
 
 struct WindowOptions {
   std::string profile = "Default";
@@ -89,9 +94,13 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   void OnLayoutChanged(CefRefPtr<CefView> view, const CefRect& new_bounds) override;
   bool CanClose(CefRefPtr<CefWindow> window) override;
   CefRect GetInitialBounds(CefRefPtr<CefWindow> window) override;
+#if defined(__APPLE__)
+  // A real titled macOS window (native corners, shadow, traffic lights,
+  // resizing, full screen); window_mac.mm makes its title bar transparent.
+  bool IsFrameless(CefRefPtr<CefWindow> window) override { return false; }
+#else
   bool IsFrameless(CefRefPtr<CefWindow> window) override { return true; }
-  bool WithStandardWindowButtons(CefRefPtr<CefWindow> window) override { return true; }
-  bool GetTitlebarHeight(CefRefPtr<CefWindow> window, float* titlebar_height) override;
+#endif
   CefSize GetMinimumSize(CefRefPtr<CefView> view) override { return CefSize(480, 320); }
   cef_runtime_style_t GetWindowRuntimeStyle() override { return CEF_RUNTIME_STYLE_ALLOY; }
   bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) override;
@@ -144,7 +153,6 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   std::string window_id_;
   CefRefPtr<CefRequestContext> context_;
   CefRefPtr<CefWindow> window_;
-  CefRefPtr<CefPanel> spacer_;
   CefRefPtr<CefPanel> content_;
   CefRefPtr<CefPanel> divider_;
   CefRefPtr<CefBoxLayout> window_layout_;
@@ -153,7 +161,6 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   CefRefPtr<CefOverlayController> status_overlay_;
   CefRefPtr<CefBrowserView> ui_view_;
   CefRefPtr<CefBrowser> ui_browser_;
-  CefRefPtr<CefOverlayController> ui_overlay_;
   CefRefPtr<UiClient> ui_client_;
   CefRefPtr<CefMessageRouterBrowserSide> router_;
 

@@ -49,7 +49,7 @@ export class TabStrip {
 
     this.root.addEventListener('click', (e) => {
       const act = e.target.closest('[data-act]')?.dataset.act;
-      if (act === 'newTab') this.b.newTab();
+      if (act === 'newTab') { this.b.newTab(); this.app.omnibox.focus(); }
       else if (act === 'tabSearch') this.app.tabSearch.open();
       else if (act === 'min') this.b.bridge.send('window.minimize');
       else if (act === 'max') this.b.bridge.send('window.maximize');
@@ -82,7 +82,17 @@ export class TabStrip {
   render() {
     const b = this.b;
     const live = new Set(b.tabs.map((t) => t.id));
-    for (const [id, el] of this.els) if (!live.has(id)) { el.remove(); this.els.delete(id); }
+    let changing = false;
+    for (const [id, el] of this.els) {
+      if (live.has(id)) continue;
+      // Closed tabs collapse away while their neighbours slide over.
+      this.els.delete(id);
+      changing = true;
+      if (el.parentNode && !el.classList.contains('is-closing')) {
+        el.classList.add('is-closing');
+        setTimeout(() => el.remove(), 210);
+      } else if (!el.classList.contains('is-closing')) el.remove();
+    }
 
     const pinned = b.pinnedTabs;
     const regular = b.regularTabs;
@@ -91,6 +101,7 @@ export class TabStrip {
     const w = Math.max(MIN_TAB, Math.min(MAX_TAB, Math.floor(avail / Math.max(1, regular.length)) - 1));
     const narrow = w < NARROW;
 
+    for (const t of b.tabs) if (!this.els.has(t.id)) changing = true;
     this.place(this.pinnedEl, pinned);
     this.place(this.tabsEl, regular);
     const split = b.split;
@@ -120,13 +131,57 @@ export class TabStrip {
     $('.tab-count .n', this.root).textContent = String(b.tabs.length);
     this.updateFades();
     this.revealActive();
+    this.movePill(changing);
+  }
+
+  /** Slide the active-tab surface to the active tab. While tabs are opening or
+   * closing it follows their animated layout frame by frame. */
+  movePill(follow) {
+    if (!this.pill) {
+      this.pill = h('div', { class: 'tab-pill is-instant' });
+      this.tabsEl.prepend(this.pill);
+    }
+    const b = this.b;
+    const target = () => {
+      const el = this.els.get(b.activeId);
+      if (!el || el.parentNode !== this.tabsEl || el.classList.contains('in-split')) return null;
+      return el;
+    };
+    const apply = (instant) => {
+      const el = target();
+      this.pill.style.opacity = el ? '1' : '0';
+      if (!el) return;
+      this.pill.classList.toggle('is-instant', instant);
+      this.pill.style.transform = `translateX(${el.offsetLeft}px)`;
+      this.pill.style.width = `${el.offsetWidth}px`;
+    };
+    cancelAnimationFrame(this.pillFrame);
+    if (!follow) {
+      apply(!this.pillPlaced);
+      this.pillPlaced = true;
+      return;
+    }
+    const start = performance.now();
+    const step = () => {
+      apply(true);
+      const t = performance.now() - start;
+      const animating = this.tabsEl.querySelector('.tab.is-new, .tab.is-closing');
+      if (t < 1500 && (t < 320 || animating)) this.pillFrame = requestAnimationFrame(step);
+    };
+    step();
   }
 
   place(container, tabs) {
+    // Keep the DOM order equal to the tab order, skipping the pill and tabs
+    // that are animating closed.
+    const skip = (n) => {
+      while (n && (n === this.pill || n.classList?.contains('is-closing'))) n = n.nextSibling;
+      return n;
+    };
     let prev = null;
     for (const t of tabs) {
       const el = this.tabEl(t);
-      const want = prev ? prev.nextSibling : container.firstChild;
+      const want = skip(prev ? prev.nextSibling : container.firstChild);
       if (el.parentNode !== container || want !== el) container.insertBefore(el, want);
       prev = el;
     }
@@ -168,9 +223,8 @@ export class TabStrip {
     el.addEventListener('auxclick', (e) => { if (e.button === 1) this.b.closeTab(id()); });
     el.querySelector('.tab-close').addEventListener('click', (e) => {
       e.stopPropagation();
-      el.classList.add('is-closing');
       this.app.preview.hide(true);
-      setTimeout(() => this.b.closeTab(id()), 120);
+      this.b.closeTab(id());
     });
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -232,6 +286,7 @@ export class TabStrip {
         moved = true;
         this.drag = true;
         el.classList.add('is-dragging');
+        if (this.pill) this.pill.style.opacity = '0';
         this.app.preview.hide(true);
       }
       const below = ev.clientY > chromeBottom + 24 && !tab.pinned && this.b.tabs.length > 1;
@@ -273,6 +328,7 @@ export class TabStrip {
       el.classList.remove('is-dragging');
       el.style.transform = '';
       this.drag = false;
+      requestAnimationFrame(() => this.movePill(false));
       if (ghost) {
         ghost.remove();
         zones.remove();

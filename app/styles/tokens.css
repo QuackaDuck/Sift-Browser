@@ -1,8 +1,10 @@
 /* Sift design tokens.
  *
- * Charcoal neutrals, one icy-blue accent reserved for state (focus, active,
- * selection, progress). Depth comes from 1px lines and value steps, not
- * from shadows; shadows are kept for things that genuinely float. */
+ * Neutral greys in both appearances and no colour accent: focus, selection
+ * and primary actions are shown with contrast and weight. The system font
+ * (SF Pro on macOS, Segoe UI Variable on Windows); Inter is bundled for
+ * Linux. Depth comes from value steps and hairlines; shadows are kept for
+ * things that genuinely float. */
 
 @font-face {
   font-family: 'Inter';
@@ -18,24 +20,18 @@
   font-display: block;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
-@font-face {
-  font-family: 'JetBrains Mono';
-  src: url('../fonts/jetbrains-mono-latin-wght.woff2') format('woff2');
-  font-weight: 100 800;
-  font-display: block;
-}
 
 :root {
-  --font: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', 'Inter', system-ui, sans-serif;
+  --mono: var(--font);
 
   /* Type scale: small and deliberate. Chrome text never exceeds 13px. */
-  --t-xs: 10.5px;
-  --t-sm: 11.5px;
-  --t-md: 12.5px;
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
   --t-lg: 13.5px;
   --t-xl: 15px;
-  --t-2xl: 20px;
+  --t-2xl: 22px;
   --t-3xl: 28px;
 
   /* Geometry */
@@ -49,115 +45,115 @@
   --r-lg: 14px;
   --r-xl: 18px;
   --r-pill: 999px;
-  --label: 500 12px/1.2 var(--font);
+  --label: 600 12px/1.2 var(--font);
 
-  /* Motion: quick, physical, never blocking. */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Motion: quick and physical, never in the way. */
+  --ease-out: cubic-bezier(0.2, 0.9, 0.25, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --spring: cubic-bezier(0.34, 1.32, 0.64, 1);
-  --d-fast: 90ms;
-  --d-med: 160ms;
-  --d-slow: 240ms;
+  --spring: cubic-bezier(0.3, 1.25, 0.5, 1);
+  --d-fast: 120ms;
+  --d-med: 200ms;
+  --d-slow: 300ms;
 }
 
 /* Dark is the default presentation. */
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg-0: #0b0c0e;         /* window base, gaps between panes */
-  --bg-1: #121316;         /* chrome surface */
-  --bg-2: #18191d;         /* raised: active tab, fields */
-  --bg-3: #1e2025;         /* hover */
-  --bg-4: #262830;         /* pressed / selected */
-  --pop: #16171b;          /* floating panels */
-  --pop-2: #1b1d21;
-  --page: #0f1013;         /* internal pages */
-  --field: #1a1b1f;
-  --field-focus: #1d1f24;
+  --bg-0: #0e0e0f;         /* window base, gaps between panes */
+  --bg-1: #1c1c1e;         /* chrome surface */
+  --bg-2: #2c2c2f;         /* raised: active tab */
+  --bg-3: #262628;         /* hover */
+  --bg-4: #333336;         /* pressed / selected */
+  --pop: #242426;          /* floating panels */
+  --pop-2: #2a2a2c;
+  --page: #18181a;         /* internal pages */
+  --field: #2a2a2c;
+  --field-focus: #303033;
 
-  --line: rgba(255, 255, 255, 0.065);
-  --line-2: rgba(255, 255, 255, 0.10);
-  --line-3: rgba(255, 255, 255, 0.16);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.11);
+  --line-3: rgba(255, 255, 255, 0.18);
 
-  --text-1: #eceef1;
-  --text-2: #a9adb5;
-  --text-3: #72767f;
-  --text-4: #4c4f57;
+  --text-1: #f2f2f3;
+  --text-2: #b4b4b9;
+  --text-3: #808086;
+  --text-4: #57575c;
 
-  --accent: #9ed2f2;
-  --accent-2: #c6e5f8;
-  --accent-ink: #08141c;     /* text on accent */
-  --accent-dim: rgba(158, 210, 242, 0.12);
-  --accent-soft: rgba(158, 210, 242, 0.20);
-  --accent-line: rgba(158, 210, 242, 0.55);
+  --accent: #f2f2f3;
+  --accent-2: #ffffff;
+  --accent-ink: #1c1c1e;     /* text on accent */
+  --accent-dim: rgba(255, 255, 255, 0.07);
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --accent-line: rgba(255, 255, 255, 0.26);
 
   --ok: #8fd3a9;
   --warn: #e7c47c;
-  --danger: #ef8b80;
-  --danger-dim: rgba(239, 139, 128, 0.12);
+  --danger: #ff8a80;
+  --danger-dim: rgba(255, 138, 128, 0.12);
 
-  --scrim: rgba(6, 7, 9, 0.55);
-  --shadow-pop: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 12px 32px -8px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3);
-  --shadow-tab: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.35);
-  --favicon-bg: #23252b;
-  --hl: rgba(158, 210, 242, 0.95);
-  --select-bg: rgba(158, 210, 242, 0.28);
+  --scrim: rgba(0, 0, 0, 0.42);
+  --shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.5), 0 18px 40px -12px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-tab: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.4);
+  --favicon-bg: #38383b;
+  --hl: var(--text-1);
+  --select-bg: rgba(255, 255, 255, 0.2);
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg-0: #dfe0e3;
-  --bg-1: #ececee;
-  --bg-2: #fbfbfc;
-  --bg-3: #e2e3e6;
-  --bg-4: #d7d9dd;
-  --pop: #fbfbfc;
-  --pop-2: #f3f3f5;
-  --page: #f6f6f7;
-  --field: #f8f8f9;
+  --bg-0: #d9d9dc;
+  --bg-1: #e8e8ea;
+  --bg-2: #ffffff;
+  --bg-3: #dcdcdf;
+  --bg-4: #d1d1d5;
+  --pop: #fcfcfd;
+  --pop-2: #f3f3f4;
+  --page: #f7f7f8;
+  --field: #f5f5f6;
   --field-focus: #ffffff;
 
-  --line: rgba(14, 18, 26, 0.075);
-  --line-2: rgba(14, 18, 26, 0.12);
-  --line-3: rgba(14, 18, 26, 0.2);
+  --line: rgba(0, 0, 0, 0.07);
+  --line-2: rgba(0, 0, 0, 0.11);
+  --line-3: rgba(0, 0, 0, 0.18);
 
-  --text-1: #15171b;
-  --text-2: #4f535b;
-  --text-3: #80848c;
-  --text-4: #a9acb2;
+  --text-1: #1d1d1f;
+  --text-2: #555559;
+  --text-3: #86868b;
+  --text-4: #b0b0b4;
 
-  --accent: #1b78b5;
-  --accent-2: #145e8f;
+  --accent: #1d1d1f;
+  --accent-2: #000000;
   --accent-ink: #ffffff;
-  --accent-dim: rgba(27, 120, 181, 0.09);
-  --accent-soft: rgba(27, 120, 181, 0.16);
-  --accent-line: rgba(27, 120, 181, 0.55);
+  --accent-dim: rgba(0, 0, 0, 0.05);
+  --accent-soft: rgba(0, 0, 0, 0.09);
+  --accent-line: rgba(0, 0, 0, 0.26);
 
-  --ok: #2c8a55;
+  --ok: #248a4d;
   --warn: #a8761b;
-  --danger: #c4473a;
-  --danger-dim: rgba(196, 71, 58, 0.09);
+  --danger: #d1453b;
+  --danger-dim: rgba(209, 69, 59, 0.09);
 
-  --scrim: rgba(20, 22, 28, 0.28);
-  --shadow-pop: 0 0 0 1px rgba(14, 18, 26, 0.08), 0 14px 34px -10px rgba(14, 18, 26, 0.28), 0 2px 6px rgba(14, 18, 26, 0.08);
-  --shadow-tab: 0 1px 2px rgba(14, 18, 26, 0.08), 0 0 0 1px rgba(14, 18, 26, 0.06);
-  --favicon-bg: #e4e5e8;
-  --hl: #0f5f93;
-  --select-bg: rgba(27, 120, 181, 0.22);
+  --scrim: rgba(0, 0, 0, 0.18);
+  --shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 18px 40px -14px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.06);
+  --shadow-tab: 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --favicon-bg: #e2e2e5;
+  --hl: var(--text-1);
+  --select-bg: rgba(0, 0, 0, 0.14);
 }
 
-/* Private windows: a deeper base and a cooler line; same accent. */
+/* Private windows: a deeper chrome in both appearances. */
 :root[data-private='true'] {
-  --bg-0: #08090b;
-  --bg-1: #0d0e11;
-  --bg-2: #14161a;
-  --line: rgba(158, 210, 242, 0.07);
+  --bg-0: #080809;
+  --bg-1: #121213;
+  --bg-2: #222224;
+  --bg-3: #1c1c1e;
 }
 :root[data-private='true'][data-theme='light'] {
-  --bg-0: #cfd2d7;
-  --bg-1: #dcdee2;
-  --bg-2: #f2f3f5;
-  --line: rgba(14, 40, 70, 0.1);
+  --bg-0: #c9c9cd;
+  --bg-1: #d8d8db;
+  --bg-2: #f2f2f3;
+  --bg-3: #cdcdd1;
 }
 
 :root[data-density='comfortable'] {
