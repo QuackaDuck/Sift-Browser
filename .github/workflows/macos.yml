@@ -10,8 +10,12 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    # Built against the macOS 26 SDK, so the window gets the Liquid Glass
+    # design (an app linked against an older SDK keeps the old look).
+    runs-on: macos-26
     timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +27,9 @@ jobs:
 
       - name: Fetch CEF
         run: scripts/fetch-cef.sh macosarm64
+
+      - name: Toolchain
+        run: xcodebuild -version && xcrun --sdk macosx --show-sdk-version
 
       - name: Configure
         run: cmake -G Xcode -S native -B build -DPROJECT_ARCH=arm64 -DCEF_ROOT="$PWD/third_party/cef"
@@ -57,7 +64,7 @@ jobs:
           # The UI page must have loaded, and the web page with it.
           grep -q 'sift://app/index.html' targets.json || { echo "Sift UI did not load"; exit 1; }
           grep -q 'wikipedia.org' targets.json || { echo "Web content did not load"; exit 1; }
-          # A real click on a tab in the title-bar area selects it.
+          # Title bar, focus and address bar checks with real OS input.
           node scripts/mac-smoke.mjs
           kill $pid
           tail -40 sift.log || true
@@ -77,6 +84,8 @@ jobs:
           path: |
             smoke.png
             click.png
+            omnibox.png
+            lights-hover.png
             sift.log
             targets.json
           if-no-files-found: ignore

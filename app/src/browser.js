@@ -84,6 +84,10 @@ export class Browser {
     if (this.info.height) this.windowHeight = this.info.height;
     const html = document.documentElement;
     html.dataset.platform = this.info.platform;
+    // macOS 27+: title-bar metrics for the Liquid Glass design.
+    if (this.info.liquidGlass) html.dataset.glass = 'true';
+    // Leave room for the native traffic lights wherever the system puts them.
+    if (this.info.trafficLightsRight) html.style.setProperty('--lights-w', `${this.info.trafficLightsRight + 14}px`);
     html.dataset.private = String(!!this.info.incognito);
     if (!this.bridge.native) html.dataset.preview = 'true';
 
@@ -547,11 +551,15 @@ export class Browser {
   layout() {
     const chrome = document.getElementById('chrome');
     if (chrome) this.chromeHeight = Math.round(chrome.getBoundingClientRect().height);
+    const tabrow = document.getElementById('tabrow');
     const panes = this.visibleIds().filter((id) => {
       const t = this.tab(id);
       return t && !isInternal(t.url);
     });
-    this.bridge.send('layout', { top: this.chromeHeight, panes, ratio: this.split?.ratio ?? 0.5 });
+    this.bridge.send('layout', {
+      top: this.chromeHeight, tabrow: tabrow ? Math.round(tabrow.getBoundingClientRect().height) : 40,
+      panes, ratio: this.split?.ratio ?? 0.5,
+    });
     this.changed('layout');
   }
 

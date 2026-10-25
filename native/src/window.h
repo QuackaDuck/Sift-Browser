@@ -38,6 +38,13 @@ namespace sift {
 // Platform window styling after creation (macOS: transparent, full-height
 // title bar). A no-op elsewhere.
 void ConfigureNativeWindow(CefRefPtr<CefWindow> window);
+// macOS 27 and later: Sift sizes its title bar for the Liquid Glass design.
+bool UsesLiquidGlassTitlebar();
+// Right edge of the native traffic lights in window coordinates (0 if none).
+int TrafficLightsRight(CefRefPtr<CefWindow> window);
+// Makes the native window holding |handle| the key window (macOS: web
+// content lives in an overlay child window). A no-op elsewhere.
+void MakeKeyWindowFor(CefWindowHandle handle);
 
 struct WindowOptions {
   std::string profile = "Default";
@@ -98,6 +105,12 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   // A real titled macOS window (native corners, shadow, traffic lights,
   // resizing, full screen); window_mac.mm makes its title bar transparent.
   bool IsFrameless(CefRefPtr<CefWindow> window) override { return false; }
+  // The title bar is as tall as Sift's tab row, which centres the traffic
+  // lights on the tabs.
+  bool GetTitlebarHeight(CefRefPtr<CefWindow> window, float* titlebar_height) override {
+    *titlebar_height = static_cast<float>(tabrow_height_);
+    return true;
+  }
 #else
   bool IsFrameless(CefRefPtr<CefWindow> window) override { return true; }
 #endif
@@ -161,6 +174,7 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   CefRefPtr<CefBoxLayout> window_layout_;
   CefRefPtr<CefBoxLayout> content_layout_;
   CefRefPtr<CefLabelButton> status_;
+  CefRefPtr<CefOverlayController> content_overlay_;
   CefRefPtr<CefOverlayController> status_overlay_;
   CefRefPtr<CefBrowserView> ui_view_;
   CefRefPtr<CefBrowser> ui_browser_;
@@ -172,7 +186,9 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   std::string focused_pane_;
   std::string fullscreen_tab_;
   double ratio_ = 0.5;
-  int chrome_height_ = 80;
+  int chrome_height_ = 82;
+  bool layout_known_ = false;
+  int tabrow_height_ = 40;  // the UI has reported the chrome height
   std::string surface_ = "strip";        // strip | cover | full
   std::map<int, std::vector<PendingPopup>> pending_popups_;
   std::set<std::string> popup_window_ids_;

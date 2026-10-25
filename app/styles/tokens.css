@@ -156,6 +156,9 @@
   --bg-3: #cdcdd1;
 }
 
+/* Liquid Glass (macOS 27+): larger controls, a taller title bar. */
+:root[data-glass='true'] { --tabrow-h: 44px; }
+
 :root[data-density='comfortable'] {
   --tabrow-h: 44px;
   --toolbar-h: 46px;

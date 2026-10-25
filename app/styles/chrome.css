@@ -26,8 +26,6 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 
 #app { position: fixed; inset: 0; display: flex; flex-direction: column; }
 
-/* While the UI surface is only the strip (native host), nothing below it is
- * visible anyway; keep the viewport transparent to layout. */
 #chrome {
   position: relative;
   flex: none;
@@ -78,7 +76,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 }
 #tabrow > * { -webkit-app-region: no-drag; }
 #tabrow > .drag-fill { -webkit-app-region: drag; flex: 1 1 24px; min-width: 24px; align-self: stretch; }
-:root[data-platform='mac'] #tabrow { padding-left: 80px; }
+:root[data-platform='mac'] #tabrow { padding-left: var(--lights-w, 80px); }
 
 .private-pill {
   display: flex; align-items: center; gap: 6px;

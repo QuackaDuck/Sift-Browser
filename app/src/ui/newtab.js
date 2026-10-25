@@ -79,7 +79,10 @@ function tileLabel(site) {
 
 function label(host) {
   // The site's own name: the label before the public suffix.
-  const parts = host.replace(/:\d+$/, '').split('.');
+  const bare = host.replace(/:\d+$/, '');
+  // IP addresses and single-label hosts (localhost) have no name to pick out.
+  if (/^[\d.]+$|^\[|^[^.]+$/.test(bare)) return bare;
+  const parts = bare.split('.');
   const twoPartSuffix = parts.length > 2 && /^(co|com|org|net|ac|gov|edu)$/.test(parts[parts.length - 2]);
   const name = parts[parts.length - (twoPartSuffix ? 3 : 2)] || parts[0];
   return name.charAt(0).toUpperCase() + name.slice(1);
