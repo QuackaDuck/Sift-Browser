@@ -3,6 +3,7 @@
 #define SIFT_CLIENTS_H_
 
 #include <atomic>
+#include <map>
 #include <mutex>
 #include <set>
 #include <string>
@@ -121,6 +122,7 @@ class ContentClient : public CefClient,
   int blocked_count_ = 0;
   std::mutex lock_;
   std::string last_favicon_;
+  std::map<uint32_t, std::string> download_paths_;
   IMPLEMENT_REFCOUNTING(ContentClient);
 };
 

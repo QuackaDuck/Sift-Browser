@@ -869,7 +869,18 @@ export class Browser {
     if (d.state === 'complete' && prev?.state !== 'complete') {
       this.showNotice({ text: `Downloaded ${d.name}`, icon: 'download', action: 'Open', run: () => this.bridge.send('download.open', { path: d.path }) });
     }
-    if (i < 0) this.emitUi('downloadStarted');
+    if (i < 0) {
+      this.emitUi('downloadStarted');
+      // A navigation that turned into a download leaves nothing to show:
+      // close a tab that never displayed a page, else go back to its page.
+      const tab = this.tab(d.tabId);
+      if (tab && !tab.recordedUrl) {
+        this.closeTab(tab.id, { noRecord: true, keepWindowOpen: true });
+        if (!this.tabs.length) this.newTab();
+      }
+      else if (tab && tab.url !== tab.recordedUrl) Object.assign(tab, { url: tab.recordedUrl, loading: false });
+      this.saveSession();
+    }
     this.changed('downloads');
   }
 

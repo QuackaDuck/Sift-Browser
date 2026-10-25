@@ -9,8 +9,9 @@ import { ago } from '../core/time.js';
 export function renderNewTab(app, page) {
   const b = app.browser;
   const s = b.settings;
-  const sites = s.ntpFrequent ? b.topSites(8) : [];
-  const moments = s.ntpMoments ? recentMoments(b.moments, 3) : [];
+  const priv = !!b.info?.incognito;
+  const sites = s.ntpFrequent && !priv ? b.topSites(8) : [];
+  const moments = s.ntpMoments && !priv ? recentMoments(b.moments, 3) : [];
   const welcome = s.showWelcome && !b.info?.incognito;
   page.innerHTML = `
     <div class="ntp bg-${esc(s.ntpBackground)}">
@@ -28,6 +29,7 @@ export function renderNewTab(app, page) {
           <span>${keycaps('mod+shift+s')} Save tabs as a Moment</span>
           <span>${keycaps('mod+\\')} Side by side</span>
         </div></section>` : ''}
+      ${priv ? `<section class="ntp-section private-note">${icon('eyeOff')}<div><b>This is a private window.</b> Pages you visit here aren't added to history, and cookies and site data are deleted when you close the window. Downloads and bookmarks you make are kept. Your network and the sites you visit can still see your activity.</div></section>` : ''}
       ${sites.length ? `<section class="ntp-section"><h4>Frequently visited</h4><div class="tiles">
         ${sites.map((x) => `<a class="tile" data-url="${esc(x.url)}" title="${esc(x.title || x.host)}">
           <span class="ic">${favicon(x.url, x.favicon)}</span><span class="lbl">${esc(tileLabel(x))}</span>

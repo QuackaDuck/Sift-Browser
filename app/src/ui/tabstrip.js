@@ -304,6 +304,20 @@ export class TabPreview {
     this.leaveTimer = 0;
     this.shownAt = 0;
     this.currentId = null;
+    // Growing the UI surface makes Chromium send a synthetic leave (and drop
+    // :hover), so the pointer position is tracked here instead.
+    document.addEventListener('pointermove', (e) => {
+      if (Date.now() < this.settleUntil) return;
+      this.px = e.clientX;
+      this.py = e.clientY;
+      if (this.currentId && !this.pointerOnAnchor()) this.leave();
+    }, true);
+  }
+
+  pointerOnAnchor() {
+    if (!this.anchorEl?.isConnected || this.px === undefined) return false;
+    const r = this.anchorEl.getBoundingClientRect();
+    return this.px >= r.left && this.px <= r.right && this.py >= r.top && this.py <= r.bottom;
   }
 
   hover(tabId, el) {
@@ -315,12 +329,11 @@ export class TabPreview {
   }
 
   leave() {
+    if (Date.now() < this.settleUntil) return;
     clearTimeout(this.timer);
     clearTimeout(this.leaveTimer);
-    // Growing the UI surface makes Chromium send a synthetic leave; only hide
-    // when the pointer has really moved off the tab.
     this.leaveTimer = setTimeout(() => {
-      if (this.anchorEl?.isConnected && this.anchorEl.matches(':hover')) return;
+      if (this.pointerOnAnchor()) return;
       this.hide();
     }, 140);
   }
@@ -331,6 +344,8 @@ export class TabPreview {
     this.currentId = tabId;
     this.anchorEl = el;
     this.shownAt = Date.now();
+    // The resize to the cover surface produces synthetic pointer events.
+    this.settleUntil = Date.now() + 400;
     const internal = isInternal(t.url);
     const status = t.loading ? 'Loading' : t.discarded ? 'Sleeping' : tabId === this.b.activeId ? 'Current' : `Viewed ${ago(t.lastActive)}`;
     const shot = t.thumbnail

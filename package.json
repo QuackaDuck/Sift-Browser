@@ -1,0 +1,12 @@
+{
+  "name": "sift-browser",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Sift: a desktop web browser built on CEF/Chromium.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "preview": "node scripts/preview.mjs",
+    "build": "scripts/build.sh"
+  }
+}

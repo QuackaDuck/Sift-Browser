@@ -293,7 +293,12 @@ bool ContentClient::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
                                      const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback) {
   const std::string dir = DownloadsDir();
   MakeDirs(dir);
-  callback->Continue(UniquePath(dir, suggested_name.ToString()), false);
+  const std::string path = UniquePath(dir, suggested_name.ToString());
+  {
+    std::lock_guard<std::mutex> guard(lock_);
+    download_paths_[item->GetId()] = path;
+  }
+  callback->Continue(path, false);
   return true;
 }
 
@@ -304,8 +309,15 @@ void ContentClient::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<C
   auto d = NewDict();
   d->SetInt("id", static_cast<int>(item->GetId()));
   d->SetString("url", item->GetURL());
-  d->SetString("path", item->GetFullPath());
-  std::string name = item->GetFullPath().ToString();
+  std::string path = item->GetFullPath().ToString();
+  {
+    // Until the final rename the item reports a temporary name.
+    std::lock_guard<std::mutex> guard(lock_);
+    auto it = download_paths_.find(item->GetId());
+    if (it != download_paths_.end()) path = it->second;
+  }
+  d->SetString("path", path);
+  std::string name = path;
   const size_t slash = name.find_last_of("/\\");
   if (slash != std::string::npos) name = name.substr(slash + 1);
   if (name.empty()) name = item->GetSuggestedFileName().ToString();
