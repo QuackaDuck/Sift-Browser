@@ -16,10 +16,10 @@ export function renderNewTab(app, page) {
   page.innerHTML = `
     <div class="ntp bg-${esc(s.ntpBackground)}">
       <div class="ntp-top"></div>
-      <label class="ntp-search" id="ntp-box">
+      <button class="ntp-search" id="ntp-box" type="button" aria-label="Search or enter address">
         ${icon('search')}
-        <input id="ntp-input" placeholder="${b.info?.incognito ? 'Search privately' : `Search ${esc(b.engine.name)}`} or type an address" spellcheck="false" autocomplete="off" aria-label="Search or address">
-      </label>
+        <span class="ntp-placeholder">${b.info?.incognito ? 'Search privately' : `Search ${esc(b.engine.name)}`} or type an address</span>
+      </button>
       ${welcome ? `<section class="welcome">
         <div><h3>Welcome to Sift</h3><p>Bring your bookmarks over, or just start browsing. A few things worth knowing:</p></div>
         <div class="acts"><button class="btn primary" data-a="import">${icon('import')}Import bookmarks</button><button class="btn ghost" data-a="dismiss">Dismiss</button></div>
@@ -47,7 +47,8 @@ export function renderNewTab(app, page) {
       </footer>
     </div>`;
 
-  app.omnibox.attach($('#ntp-input', page), $('#ntp-box', page));
+  // The box is a doorway to the address bar (one place to type), like Chrome's.
+  $('#ntp-box', page).addEventListener('click', () => app.omnibox.focus());
   page.onclick = (e) => {
     const hide = e.target.closest('[data-hide]');
     if (hide) {
@@ -78,7 +79,10 @@ function tileLabel(site) {
 
 function label(host) {
   // The site's own name: the label before the public suffix.
-  const parts = host.replace(/:\d+$/, '').split('.');
+  const bare = host.replace(/:\d+$/, '');
+  // IP addresses and single-label hosts (localhost) have no name to pick out.
+  if (/^[\d.]+$|^\[|^[^.]+$/.test(bare)) return bare;
+  const parts = bare.split('.');
   const twoPartSuffix = parts.length > 2 && /^(co|com|org|net|ac|gov|edu)$/.test(parts[parts.length - 2]);
   const name = parts[parts.length - (twoPartSuffix ? 3 : 2)] || parts[0];
   return name.charAt(0).toUpperCase() + name.slice(1);

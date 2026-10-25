@@ -61,7 +61,7 @@ npm run preview             # serve the UI in an ordinary browser at http://loca
 | Bookmark import from Chrome, Edge, Brave, Arc, Vivaldi, Chromium profiles or a bookmarks HTML file; HTML export | Parsers unit-tested; the import UI is implemented |
 | Light and dark appearance | Verified |
 | Windows build | Code and CMake in place; not built yet |
-| macOS build (app bundle with helper apps) | CMake follows CEF's sample layout; not built yet |
+| macOS build (Apple Silicon) | Built against the macOS 26 SDK and tested in CI (`.github/workflows/macos.yml`) with real mouse and keyboard input: traffic lights centred on the tab row, tab clicks in the title bar, page focus, address bar results |
 | Chrome extensions | Not available. Sift's tabs use CEF's Alloy runtime (CEF permits only one Chrome-style view per window) and Alloy doesn't host extensions. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). |
 | Built-in password manager, autofill | Not available, for the same reason. Third-party password managers would need extension support. |
 | Importing history and saved passwords from other browsers | Not implemented |
@@ -94,4 +94,4 @@ tests/        node:test unit tests for app/src/core
 docs/         ARCHITECTURE.md, DESIGN.md, screenshots/
 ```
 
-Fonts: Inter and JetBrains Mono, both under the SIL Open Font License (`app/fonts/`).
+Fonts: the system font on macOS and Windows; Inter (SIL Open Font License, `app/fonts/`) on Linux.

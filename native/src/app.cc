@@ -25,6 +25,9 @@ void SiftApp::OnBeforeCommandLineProcessing(const CefString& process_type, CefRe
   command_line->AppendSwitch("disable-component-update");
   command_line->AppendSwitch("disable-field-trial-config");
   command_line->AppendSwitch("disable-background-networking");
+  // Sift has no casting UI; without this Chromium's media router scans the
+  // local network, which on macOS triggers a "find devices" permission prompt.
+  command_line->AppendSwitchWithValue("disable-features", "MediaRouter,DialMediaRouteProvider,CastMediaRouteProvider");
 }
 
 void SiftApp::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) {

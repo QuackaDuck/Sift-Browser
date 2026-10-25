@@ -77,6 +77,8 @@ class App {
     if (!navigated && page.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
     const [, name, sub] = url.match(/^sift:\/\/([^/?#]*)\/?([^?#]*)/) || [];
     const scroll = navigated ? 0 : page.scrollTop;
+    // Entrance animations play when you arrive, not on every data refresh.
+    page.classList.toggle('no-entrance', !navigated);
     if (name === 'newtab') renderNewTab(this, page);
     else if (name === 'settings') {
       renderSettings(this, page, sub || 'appearance');
@@ -150,6 +152,12 @@ class App {
   // ---- keyboard ---------------------------------------------------------
 
   onKey(e) {
+    // On the New Tab page, typing anywhere goes to the address bar.
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !this.layer.isOpen
+        && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && this.browser.active?.url === 'sift://newtab') {
+      this.omnibox.focus();
+      return;
+    }
     if (e.key === 'Escape') {
       if (this.layer.escape()) { e.preventDefault(); e.stopPropagation(); return; }
       if (this.browser.find) { this.browser.closeFind(); e.preventDefault(); }

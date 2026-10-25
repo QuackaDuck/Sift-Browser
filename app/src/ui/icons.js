@@ -84,8 +84,8 @@ const P = {
   link: '<path d="M7 9a2.5 2.5 0 0 0 3.6.1l2-2a2.5 2.5 0 0 0-3.6-3.6l-.8.8"/><path d="M9 7a2.5 2.5 0 0 0-3.6-.1l-2 2a2.5 2.5 0 0 0 3.6 3.6l.8-.8"/>',
   grip: '<circle cx="6" cy="4" r=".8" fill="currentColor"/><circle cx="10" cy="4" r=".8" fill="currentColor"/><circle cx="6" cy="8" r=".8" fill="currentColor"/><circle cx="10" cy="8" r=".8" fill="currentColor"/><circle cx="6" cy="12" r=".8" fill="currentColor"/><circle cx="10" cy="12" r=".8" fill="currentColor"/>',
   dot: '<circle cx="8" cy="8" r="2" fill="currentColor"/>',
-  // The Sift mark: three bars of a sieve, the last one in the accent.
-  sift: '<path d="M3 4.5h10" /><path d="M4.75 8h6.5"/><path d="M6.5 11.5h3" stroke="var(--accent)"/>',
+  // The Sift mark: a planet, its sunlit limb at the top right.
+  sift: '<circle cx="8" cy="8" r="5.7" fill="currentColor" stroke="none" opacity=".22"/><path d="M2.211 6.421A6 6 0 1 1 9.579 13.789A5.4 5.4 0 1 0 2.211 6.421Z" fill="currentColor" stroke="none"/>',
 };
 
 export function icon(name, cls = '') {

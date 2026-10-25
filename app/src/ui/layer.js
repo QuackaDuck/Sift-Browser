@@ -1,10 +1,11 @@
 // The overlay layer and the UI "surface".
 //
-// In the native host the UI browser normally covers only the chrome strip.
-// When something must float over the page (results, menus, tab search,
-// previews) the layer asks the host for a snapshot of the visible panes,
-// paints it as a backdrop, then grows the UI to cover the window. Internal
-// pages (New Tab, Settings, Library) use the "full" surface with no snapshot.
+// In the native host the UI fills the window and web content floats over it
+// below the chrome strip. When something must float over the page (results,
+// menus, tab search, previews) the layer asks the host for a snapshot of the
+// visible panes, paints it as a backdrop, then has the host hide the web
+// content ("cover"). Internal pages (New Tab, Settings, Library) hide it with
+// no snapshot ("full"). The UI itself never resizes.
 
 import { $, h } from './dom.js';
 import { isInternal } from '../core/url.js';
@@ -122,6 +123,8 @@ export class Layer {
       const shots = await this.bridge.send('snapshot').catch(() => []);
       if (token !== this.coverToken) return;
       await this.paintBackdrop(shots);
+      // Let the backdrop reach the screen before the content is hidden.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       if (token !== this.coverToken) return;
       this.browser.adoptSnapshots(shots);
     }
@@ -136,9 +139,12 @@ export class Layer {
     const imgs = [];
     for (const r of rects) {
       const shot = (shots || []).find((s) => s.id === r.id);
-      if (!shot) continue;
+      // A capture can fail (e.g. the window is covered); the tab's last
+      // thumbnail is a better backdrop than an empty pane.
+      const data = shot?.data || this.browser.tab(r.id)?.thumbnail;
+      if (!data) continue;
       const img = new Image();
-      img.src = shot.data;
+      img.src = data;
       // Height follows the capture's aspect ratio: while the UI is only the
       // strip, it can't measure the window height itself.
       Object.assign(img.style, { left: `${r.x}px`, top: `${r.y - this.browser.chromeHeight}px`, width: `${r.w}px`, height: 'auto' });

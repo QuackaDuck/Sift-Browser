@@ -35,17 +35,6 @@ constexpr char kPlatform[] = "mac";
 constexpr char kPlatform[] = "linux";
 #endif
 
-class SpacerDelegate : public CefPanelDelegate {
- public:
-  explicit SpacerDelegate(const int* height) : height_(height) {}
-  CefSize GetPreferredSize(CefRefPtr<CefView> view) override { return CefSize(0, *height_); }
-  CefSize GetMinimumSize(CefRefPtr<CefView> view) override { return CefSize(0, *height_); }
-  CefSize GetMaximumSize(CefRefPtr<CefView> view) override { return CefSize(0, *height_); }
-
- private:
-  const int* height_;
-  IMPLEMENT_REFCOUNTING(SpacerDelegate);
-};
 
 class DividerDelegate : public CefPanelDelegate {
  public:
@@ -83,6 +72,8 @@ class StatusDelegate : public CefButtonDelegate {
   IMPLEMENT_REFCOUNTING(StatusDelegate);
 };
 
+// The UI browser fills the window and never changes size: resizing a
+// renderer costs a relayout and a stale frame, and stalls its animations.
 class UiViewDelegate : public CefBrowserViewDelegate {
  public:
   cef_runtime_style_t GetBrowserRuntimeStyle() override { return CEF_RUNTIME_STYLE_ALLOY; }
@@ -217,10 +208,13 @@ CefRect SiftWindow::GetInitialBounds(CefRefPtr<CefWindow> window) {
   return CefRect(area.x + (area.width - w) / 2 + offset, area.y + (area.height - h) / 2 + offset, w, h);
 }
 
-bool SiftWindow::GetTitlebarHeight(CefRefPtr<CefWindow> window, float* titlebar_height) {
-  *titlebar_height = 38;  // centre the macOS traffic lights on the tab row
-  return true;
-}
+#if !defined(__APPLE__)
+void ConfigureNativeWindow(CefRefPtr<CefWindow> window) {}
+bool UsesLiquidGlassTitlebar() { return false; }
+int TrafficLightsRight(CefRefPtr<CefWindow> window) { return 0; }
+void MakeKeyWindowFor(CefWindowHandle handle) {}
+void AlignTrafficLights(CefRefPtr<CefWindow> window, float center, float* titlebar_height) {}
+#endif
 
 void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   CEF_REQUIRE_UI_THREAD();
@@ -233,8 +227,6 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   vertical.horizontal = false;
   window_layout_ = window_->SetToBoxLayout(vertical);
 
-  spacer_ = CefPanel::CreatePanel(new SpacerDelegate(&chrome_height_));
-  spacer_->SetBackgroundColor(kWindowColor);
   content_ = CefPanel::CreatePanel(nullptr);
   content_->SetBackgroundColor(kWindowColor);
   CefBoxLayoutSettings horizontal;
@@ -245,16 +237,19 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   divider_->SetVisible(false);
   content_->AddChildView(divider_);
 
-  window_->AddChildView(spacer_);
-  window_->AddChildView(content_);
-  window_layout_->SetFlexForView(content_, 1);
-
   ui_client_ = new UiClient(this);
   CefBrowserSettings ui_settings;
   ui_settings.background_color = kWindowColor;
   ui_view_ = CefBrowserView::CreateBrowserView(ui_client_, AppUrl(), ui_settings, nullptr, context_,
                                                new UiViewDelegate());
-  ui_overlay_ = window_->AddOverlayView(ui_view_, CEF_DOCKING_MODE_CUSTOM, true);
+  window_->AddChildView(ui_view_);
+  window_layout_->SetFlexForView(ui_view_, 1);
+
+  // Web content floats over the UI below the chrome strip. It stays hidden
+  // until the UI reports its layout, so pages never load at a wrong size.
+  // The overlay leaves the tab row alone, so on macOS (where overlays are
+  // child windows) it never covers the traffic lights.
+  content_overlay_ = window_->AddOverlayView(content_, CEF_DOCKING_MODE_CUSTOM, true);
 
   // Link-hover status text: a native overlay so it can sit over web content
   // without growing the UI surface.
@@ -275,8 +270,9 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   }
 
   ApplySurface();
-  ui_overlay_->SetVisible(true);
   window_->Show();
+  ConfigureNativeWindow(window_);
+  AlignTrafficLights(window_, tabrow_height_ / 2.0f, &titlebar_height_);
   ui_view_->RequestFocus();
 }
 
@@ -286,7 +282,7 @@ void SiftWindow::OnWindowDestroyed(CefRefPtr<CefWindow> window) {
   tabs_.clear();
   ui_view_ = nullptr;
   ui_browser_ = nullptr;
-  ui_overlay_ = nullptr;
+  content_overlay_ = nullptr;
   status_overlay_ = nullptr;
   window_ = nullptr;
   if (--g_window_count == 0) CefQuitMessageLoop();
@@ -314,7 +310,6 @@ void SiftWindow::MaybeFinishClose() {
 // --- Geometry ---------------------------------------------------------------
 
 void SiftWindow::OnWindowBoundsChanged(CefRefPtr<CefWindow> window, const CefRect& new_bounds) {
-  ApplySurface();
   if (!ui_ready_) return;
   auto d = NewDict();
   d->SetBool("maximized", window_->IsMaximized());
@@ -337,27 +332,29 @@ void SiftWindow::OnWindowActivationChanged(CefRefPtr<CefWindow> window, bool act
 
 bool SiftWindow::OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) { return false; }
 
+// strip: web content over the UI, below the chrome strip.
+// cover: content hidden; the UI shows a snapshot of it with its menus,
+//        results or previews on top (the snapshot is identical, so hiding
+//        the content isn't visible).
+// full:  content hidden for Sift's own pages.
+// Only the overlay is shown, hidden or moved; the UI never resizes.
 void SiftWindow::ApplySurface() {
-  if (!window_ || !ui_overlay_) return;
-  const CefRect bounds = window_->GetBounds();
+  if (!window_ || !content_overlay_) return;
   const bool fullscreen_tab = !fullscreen_tab_.empty();
-  if (fullscreen_tab) {
-    ui_overlay_->SetVisible(false);
-    return;
+  const bool show = fullscreen_tab || (surface_ == "strip" && layout_known_ && !panes_.empty());
+  if (show) {
+    const CefRect b = window_->GetBounds();
+    const int top = fullscreen_tab ? 0 : chrome_height_;
+    const CefRect want(0, top, b.width, std::max(0, b.height - top));
+    if (!(content_overlay_->GetBounds() == want)) content_overlay_->SetBounds(want);
   }
-  if (surface_ == "strip") {
-    ui_overlay_->SetBounds(CefRect(0, 0, bounds.width, chrome_height_));
-  } else {
-    ui_overlay_->SetBounds(CefRect(0, 0, bounds.width, bounds.height));
-  }
-  ui_overlay_->SetVisible(true);
-  if (status_overlay_ && surface_ != "strip") status_overlay_->SetVisible(false);
+  if (content_overlay_->IsVisible() != show) content_overlay_->SetVisible(show);
+  if (status_overlay_ && !show) status_overlay_->SetVisible(false);
 }
 
 void SiftWindow::SetSurface(const std::string& mode) {
   if (mode != "strip" && mode != "cover" && mode != "full") return;
   surface_ = mode;
-  content_->SetVisible(mode != "full");
   ApplySurface();
 }
 
@@ -374,7 +371,6 @@ void SiftWindow::EnsureBrowser(Tab* tab) {
 
 void SiftWindow::ApplyLayout() {
   if (!window_) return;
-  spacer_->SetVisible(fullscreen_tab_.empty());
   std::vector<std::string> visible = fullscreen_tab_.empty() ? panes_ : std::vector<std::string>{fullscreen_tab_};
   for (const auto& id : visible) {
     if (Tab* tab = FindTab(id)) EnsureBrowser(tab);
@@ -401,11 +397,9 @@ void SiftWindow::ApplyLayout() {
   }
   content_layout_->SetFlexForView(divider_, 0);
   // Flex changes alone don't trigger a layout pass.
-  spacer_->InvalidateLayout();
   content_->InvalidateLayout();
-  window_->Layout();
-  content_->Layout();
   ApplySurface();
+  content_->Layout();
 }
 
 // --- Tabs -------------------------------------------------------------------
@@ -540,6 +534,7 @@ void SiftWindow::Capture(Tab* tab, double scale, int quality, std::function<void
   auto params = NewDict();
   params->SetString("format", "jpeg");
   params->SetInt("quality", quality);
+  params->SetBool("optimizeForSpeed", true);
   if (scale >= 1.0) {
     DevTools(tab, "Page.captureScreenshot", params, [done](bool ok, CefRefPtr<CefDictionaryValue> result) {
       done(ok && result ? "data:image/jpeg;base64," + result->GetString("data").ToString() : "");
@@ -693,6 +688,7 @@ void SiftWindow::OnUiBrowserClosed() {
 void SiftWindow::FocusUi() {
   if (!ui_view_ || !ui_browser_) return;
   ui_view_->RequestFocus();
+  MakeKeyWindowFor(ui_browser_->GetHost()->GetWindowHandle());
   ui_browser_->GetHost()->SetFocus(true);
 }
 
@@ -751,6 +747,8 @@ bool SiftWindow::Dispatch(const std::string& cmd, Args args, QueryCallback cb) {
     d->SetString("engine", std::string("CEF ") + CEF_VERSION);
     d->SetString("chromium", std::to_string(CHROME_VERSION_MAJOR) + "." + std::to_string(CHROME_VERSION_MINOR) + "." +
                                  std::to_string(CHROME_VERSION_BUILD) + "." + std::to_string(CHROME_VERSION_PATCH));
+    d->SetBool("liquidGlass", UsesLiquidGlassTitlebar());
+    d->SetInt("trafficLightsRight", TrafficLightsRight(window_));
     d->SetInt("trackerDomains", static_cast<int>(TrackerList::Get().size()));
     d->SetInt("width", window_->GetBounds().width);
     d->SetInt("height", window_->GetBounds().height);
@@ -819,7 +817,13 @@ bool SiftWindow::Dispatch(const std::string& cmd, Args args, QueryCallback cb) {
     return true;
   }
   if (cmd == "layout") {
+    layout_known_ = true;
     chrome_height_ = std::clamp(static_cast<int>(NumberArg(args, "top", chrome_height_)), 0, 400);
+    const int tabrow = std::clamp(static_cast<int>(NumberArg(args, "tabrow", tabrow_height_)), 24, 80);
+    if (tabrow != tabrow_height_) {
+      tabrow_height_ = tabrow;
+      AlignTrafficLights(window_, tabrow_height_ / 2.0f, &titlebar_height_);
+    }
     ratio_ = NumberArg(args, "ratio", ratio_);
     panes_.clear();
     if (CefRefPtr<CefListValue> panes = args->GetList("panes")) {
@@ -919,7 +923,11 @@ bool SiftWindow::Dispatch(const std::string& cmd, Args args, QueryCallback cb) {
   }
   if (cmd == "tab.focus") {
     if (tab && tab->view && surface_ == "strip") {
+      // Focus the view before activating its window: a window activated with
+      // nothing focused moves focus as if by Tab, which focuses the page's
+      // first link (e.g. a "skip to content" link).
       tab->view->RequestFocus();
+      if (host) MakeKeyWindowFor(host->GetWindowHandle());
       if (host) host->SetFocus(true);
     }
     cb->Success("true");

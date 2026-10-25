@@ -50,11 +50,9 @@ export class Omnibox {
 
   get isToolbar() { return this.input === $('#address'); }
 
+  /** Focus the address bar with its contents selected, ready to type over. */
   focus(opts = {}) {
-    const ntpInput = $('.ntp-search input');
-    const tab = this.b.active;
-    const useNtp = !opts.command && ntpInput && tab?.url.startsWith('sift://newtab') && !this.b.isSplitVisible;
-    const input = useNtp ? ntpInput : $('#address');
+    const input = $('#address');
     this.setMode(opts.command ? 'command' : 'address');
     this.b.bridge.send('ui.focus');
     input.focus();
@@ -78,6 +76,7 @@ export class Omnibox {
     this.box = box;
     this.editing = true;
     box.classList.add('is-focused');
+    document.getElementById('ntp-box')?.classList.add('is-handoff');
     if (input === $('#address')) {
       const t = this.b.focused;
       const q = this.b.displayQuery(t);
@@ -93,6 +92,7 @@ export class Omnibox {
   onBlur(input, box) {
     if (document.activeElement === input) return;
     box.classList.remove('is-focused');
+    document.getElementById('ntp-box')?.classList.remove('is-handoff');
     if (this.input !== input) return;
     this.editing = false;
     this.close();
@@ -193,16 +193,7 @@ export class Omnibox {
       prevGroup = group;
       return this.row(res, i, start);
     }).join('');
-    const mac = document.documentElement.dataset.platform === 'mac';
-    pop.innerHTML = `<div class="results">${rows}</div>
-      <div class="results-foot">
-        <span>${keycaps('up')}${keycaps('down')} Select</span>
-        <span>${keycaps('enter')} Open</span>
-        ${this.mode === 'address' ? `<span>${keycaps('mod+enter')} New tab</span>` : ''}
-        <span class="grow"></span>
-        ${this.mode === 'address' ? `<span>${keycaps('mod+k')} Actions</span>` : `<span>${keycaps('esc')} Back to address</span>`}
-      </div>`;
-    void mac;
+    pop.innerHTML = `<div class="results">${rows}</div>`;
     this.paintSelection();
   }
 

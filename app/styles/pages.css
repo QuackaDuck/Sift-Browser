@@ -18,6 +18,9 @@
   display: flex; flex-direction: column; align-items: center;
   padding: 0 24px;
   position: relative;
+  /* The entrance slides the footer down past the bottom edge; clip it so the
+   * page doesn't flash a scrollbar while it settles. */
+  overflow: clip;
 }
 .ntp.bg-grain {
   background-image:
@@ -40,9 +43,9 @@
   transition: box-shadow var(--d-fast) linear, background-color var(--d-fast) linear;
 }
 .ntp-search:hover { box-shadow: inset 0 0 0 1px var(--line-3); }
-.ntp-search.is-focused { background: var(--field-focus); box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 4px var(--accent-dim); }
+.ntp-search.is-focused { background: var(--field-focus); box-shadow: inset 0 0 0 1px var(--line-3); }
 .ntp-search > svg { width: 18px; height: 18px; color: var(--text-3); flex: none; }
-.ntp-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font-size: var(--t-xl); caret-color: var(--accent); }
+.ntp-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font-size: var(--t-xl); caret-color: var(--text-1); }
 .ntp-search input::placeholder { color: var(--text-3); }
 .ntp-search .keys { color: var(--text-3); margin-right: 6px; }
 
@@ -219,7 +222,7 @@
   appearance: none;
   font-size: var(--t-sm);
 }
-.select:focus-visible { box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 3px var(--accent-dim); outline: none; }
+.select:focus-visible { box-shadow: inset 0 0 0 1px var(--line-3); outline: none; }
 
 .swatches { display: flex; gap: 8px; }
 .swatch {
@@ -291,3 +294,30 @@
 .private-note { display: flex; gap: 12px; color: var(--text-2); font-size: var(--t-md); line-height: 1.55; padding: 14px 16px; border-radius: var(--r-xl); box-shadow: inset 0 0 0 1px var(--line); }
 .private-note svg { width: 18px; height: 18px; color: var(--accent); flex: none; margin-top: 2px; }
 .private-note b { color: var(--text-1); font-weight: 500; }
+
+/* The New Tab search box hands off to the address bar. */
+button.ntp-search { cursor: text; text-align: left; font: inherit; color: inherit; }
+.ntp-placeholder { flex: 1; color: var(--text-3); font-size: var(--t-xl); transition: opacity var(--d-med) var(--ease-out), transform var(--d-med) var(--ease-out); }
+.ntp-search.is-handoff { background: var(--field-focus); box-shadow: inset 0 0 0 1px var(--line-3); }
+.ntp-search.is-handoff .ntp-placeholder { opacity: 0.35; transform: translateX(2px); }
+
+/* New Tab entrance: the page settles in rather than appearing. */
+.ntp > * { animation: ntp-in 420ms var(--ease-out) both; }
+.ntp > :nth-child(2) { animation-delay: 30ms; }
+.ntp > :nth-child(3) { animation-delay: 70ms; }
+.ntp > :nth-child(4) { animation-delay: 110ms; }
+.ntp > :nth-child(5) { animation-delay: 150ms; }
+.ntp > :nth-child(6) { animation-delay: 190ms; }
+@keyframes ntp-in { from { opacity: 0; transform: translateY(8px); } }
+.tiles .tile { animation: tile-in 360ms var(--ease-out) both; }
+.tiles .tile:nth-child(2) { animation-delay: 150ms; }
+.tiles .tile:nth-child(3) { animation-delay: 175ms; }
+.tiles .tile:nth-child(4) { animation-delay: 200ms; }
+.tiles .tile:nth-child(5) { animation-delay: 225ms; }
+.tiles .tile:nth-child(6) { animation-delay: 250ms; }
+.tiles .tile:nth-child(7) { animation-delay: 275ms; }
+.tiles .tile:nth-child(8) { animation-delay: 300ms; }
+.tiles .tile:first-child { animation-delay: 125ms; }
+@keyframes tile-in { from { opacity: 0; transform: translateY(6px) scale(0.96); } }
+.shell-main .inner { animation: ntp-in 320ms var(--ease-out) both; }
+#page.no-entrance .ntp > *, #page.no-entrance .tiles .tile, #page.no-entrance .shell-main .inner { animation: none; }
