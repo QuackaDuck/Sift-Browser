@@ -421,7 +421,7 @@ export class Browser {
       Object.assign(tab, { url, title: '', favicon: null, loading: true, progress: 0.1, error: null, crashed: false });
       this.bridge.send('tab.create', { id: tab.id, url });
     } else {
-      Object.assign(tab, { url, loading: true, progress: 0.1, error: null, crashed: false });
+      Object.assign(tab, { url, loading: true, progress: 0.1, error: null, crashed: false, thumbnail: null });
       this.bridge.send('tab.navigate', { id: tab.id, url });
     }
     tab.discarded = false;
@@ -596,6 +596,7 @@ export class Browser {
     const tab = this.tab(d.id);
     if (!tab) return;
     const prevUrl = tab.url;
+    const wasLoading = tab.loading;
     const { id, ...rest } = d;
     if (rest.url !== undefined && isInternal(tab.url) && !isInternal(rest.url)) tab.backUrl = null;
     Object.assign(tab, rest);
@@ -603,6 +604,7 @@ export class Browser {
     if (d.url && d.url !== prevUrl) {
       tab.error = null;
       if (hostOf(d.url) !== hostOf(prevUrl)) tab.favicon = d.favicon || null;
+      tab.thumbnail = null; // never show the previous page's picture
       if (this.find) this.find = null;
     }
     // Sift sets tab.url optimistically when navigating, so compare against the
@@ -613,29 +615,36 @@ export class Browser {
     }
     if (d.title !== undefined) this.updateHistoryTitle(tab);
     if (d.favicon) this.updateHistoryFavicon(tab);
-    if (d.loaded) {
-      this.scheduleThumbnail(tab.id);
-      if (!this.visibleIds().includes(tab.id)) tab.unread = true;
-    }
+    if (d.loaded && !this.visibleIds().includes(tab.id)) tab.unread = true;
+    // Capture once the page has finished loading (not on every load-end:
+    // subframes and late events would capture half-drawn pages).
+    if (d.loading === false && wasLoading) this.scheduleThumbnail(tab.id);
     this.changed('tabs', ...(d.id === this.focusedId ? ['active'] : []));
     if (d.url || d.title) this.saveSession();
   }
 
-  scheduleThumbnail(id) {
+  scheduleThumbnail(id, attempt = 0) {
     clearTimeout(this.thumbTimers.get(id));
     this.thumbTimers.set(id, setTimeout(async () => {
       if (!this.visibleIds().includes(id)) return;
+      // Mid-navigation the old page is still on screen: wait for the new one.
+      if (this.tab(id)?.loading) {
+        if (attempt < 10) this.scheduleThumbnail(id, attempt + 1);
+        return;
+      }
+      const url = this.tab(id)?.url;
       const data = await this.bridge.send('thumbnail', { id, scale: 0.35 }).catch(() => null);
       const tab = this.tab(id);
-      if (data && tab) { tab.thumbnail = data; tab.thumbAt = Date.now(); this.changed('thumbs'); }
-    }, 900));
+      // Drop a capture that finished after the tab moved on to another page.
+      if (data && tab && tab.url === url) { tab.thumbnail = data; tab.thumbAt = Date.now(); this.changed('thumbs'); }
+    }, 600));
   }
 
   /** Snapshots taken for overlays double as fresh thumbnails. */
   adoptSnapshots(shots) {
     for (const s of shots || []) {
       const tab = this.tab(s.id);
-      if (tab) { tab.thumbnail = s.data; tab.thumbAt = Date.now(); }
+      if (tab && !tab.loading) { tab.thumbnail = s.data; tab.thumbAt = Date.now(); }
     }
   }
 

@@ -553,11 +553,13 @@ void SiftWindow::Capture(Tab* tab, double scale, int quality, std::function<void
              if (!ok || !metrics || !tab) return done("");
              CefRefPtr<CefDictionaryValue> vp = metrics->GetDictionary("cssVisualViewport");
              if (!vp) return done("");
+             // Whole numbers arrive as ints; GetDouble() would read them as 0.
+             auto num = [&vp](const char* key) { return NumberArg(vp, key, 0); };
              auto clip = NewDict();
-             clip->SetDouble("x", vp->GetDouble("pageX"));
-             clip->SetDouble("y", vp->GetDouble("pageY"));
-             clip->SetDouble("width", vp->GetDouble("clientWidth"));
-             clip->SetDouble("height", vp->GetDouble("clientHeight"));
+             clip->SetDouble("x", num("pageX"));
+             clip->SetDouble("y", num("pageY"));
+             clip->SetDouble("width", num("clientWidth"));
+             clip->SetDouble("height", num("clientHeight"));
              clip->SetDouble("scale", scale);
              params->SetDictionary("clip", clip);
              DevTools(tab, "Page.captureScreenshot", params, [done](bool ok, CefRefPtr<CefDictionaryValue> result) {

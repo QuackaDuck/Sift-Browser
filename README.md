@@ -37,29 +37,33 @@ npm run preview             # serve the UI in an ordinary browser at http://loca
 
 ## What works, and what needs more engine work
 
-Everything below was exercised in the CEF build on Linux (Chromium 156) while making this README, unless the table says otherwise.
+"Verified" means I exercised it in the CEF build on Linux (Chromium 156), driving the real window with keyboard and mouse input, while writing this README. "Implemented" means the code is in place but hasn't been exercised end to end yet.
 
 | Area | Status |
 | --- | --- |
-| Browsing, back/forward/reload/stop, page zoom, find in page, print, view source, DevTools | Working (Chromium via CEF) |
-| Address bar: inline completion, open tabs, history, bookmarks, closed tabs, Moments, actions | Working |
-| Search engines (DuckDuckGo default; Google, Bing, Kagi, Startpage, Ecosia), opt-in suggestions | Working |
-| Tabs: new, close, reopen closed, pin, reorder by drag, duplicate, mute, keyboard switching | Working |
-| Tab search, multi-select, close/save selection, Tidy suggestions with undo | Working |
-| Hover previews with page thumbnails | Working (thumbnails are captured through the DevTools protocol) |
-| Moments: save, rename, restore (also into a new window), update, delete with undo, export/import | Working |
-| Split view: two live panes, focus, resize, swap, exit, drag a tab into the page | Working |
-| History, bookmarks, downloads (pause, resume, cancel, open, show in folder) | Working |
-| Session restore (restored tabs load when you open them) and optional tab sleeping | Working |
-| Permission prompts (location, camera, mic, notifications…) with per-site memory | Working |
-| Tracker blocking (98-domain list), third-party cookie blocking, Do Not Track, clear data | Working |
-| Private windows (separate in-memory profile) and multiple profiles | Working |
-| Import bookmarks from Chrome, Edge, Brave, Arc, Vivaldi and Chromium profiles, or any bookmarks HTML file; export to HTML | Working (the browser-profile import found no profiles on the test machine, so it was only checked against the format parser) |
-| Light and dark appearance, comfortable density | Working |
-| Windows build | Code and CMake are in place; not built or run yet |
-| macOS build (app bundle with helper apps) | CMake follows CEF's sample layout; not built or run yet |
-| Chrome extensions | Not available. Sift's tabs use CEF's Alloy runtime, which CEF only allows several of in one window, and Alloy doesn't host extensions. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). |
-| Built-in password manager, autofill | Not available (same reason). Third-party password managers would need extension support. |
+| Browsing, back/forward/reload, page zoom, find in page, view source | Verified |
+| Print, DevTools | Implemented |
+| Address bar: inline completion, open tabs, history, bookmarks, closed tabs, Moments, Actions mode | Verified |
+| Default search (DuckDuckGo) | Verified; switching engines is implemented |
+| Opt-in search suggestions | Implemented |
+| Tabs: new, close, reopen closed, drag to reorder, pin, duplicate | Verified; mute is implemented |
+| Tab search, Tidy suggestions, closing via Tidy with Undo | Verified |
+| Hover previews with page thumbnails | Verified (thumbnails come from the DevTools protocol) |
+| Moments: save (and close), restore, rename, delete with Undo | Verified; export/import and "open in new window" are implemented |
+| Split view: drag a tab into the page, live panes, resize, focus, swap, exit | Verified |
+| History, bookmarks (Ctrl/Cmd+D), New Tab frequent sites | Verified |
+| Downloads saved to ~/Downloads, toolbar panel | Verified; pause/resume/cancel are implemented |
+| Session restore (only the visible tab loads at startup) | Verified; optional tab sleeping is implemented |
+| Permission prompts with per-site memory | Verified with a location request |
+| Tracker blocking (98-domain list, per-page report), third-party cookie blocking, Do Not Track, clear cache | Verified; clearing cookies and history is implemented |
+| Private windows (separate in-memory profile, no history written) | Verified |
+| Profiles | Implemented |
+| Bookmark import from Chrome, Edge, Brave, Arc, Vivaldi, Chromium profiles or a bookmarks HTML file; HTML export | Parsers unit-tested; the import UI is implemented |
+| Light and dark appearance | Verified |
+| Windows build | Code and CMake in place; not built yet |
+| macOS build (app bundle with helper apps) | CMake follows CEF's sample layout; not built yet |
+| Chrome extensions | Not available. Sift's tabs use CEF's Alloy runtime (CEF permits only one Chrome-style view per window) and Alloy doesn't host extensions. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). |
+| Built-in password manager, autofill | Not available, for the same reason. Third-party password managers would need extension support. |
 | Importing history and saved passwords from other browsers | Not implemented |
 | Sync | Not planned; Sift works without an account |
 

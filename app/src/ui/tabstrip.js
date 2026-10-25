@@ -354,8 +354,7 @@ export class TabPreview {
       : `<div class="shot"><div class="big-favicon">${favicon(t.url, t.favicon, { internalIcon: icon('sift') })}</div></div>`;
     const card = h('div', { class: `preview${instant ? ' is-instant' : ''}`, html: `${shot}
       <div class="meta"><div class="title">${esc(t.title || hostOf(t.url))}</div>
-      <div class="sub">${t.secure ? `<span class="ok">${icon('lock')}</span>` : ''}<span>${esc(internal ? t.url : hostOf(t.url))}</span><span class="sep">·</span><span>${esc(status)}</span>${t.blocked ? `<span class="sep">·</span><span>${t.blocked} blocked</span>` : ''}</div></div>` });
-    card.querySelectorAll('.sub svg').forEach((s) => { s.style.width = '11px'; s.style.height = '11px'; });
+      <div class="sub"><span class="host">${esc(internal ? t.url : hostOf(t.url))}</span><span class="sep">·</span><span>${esc(status)}</span></div></div>` });
     const r = el.getBoundingClientRect();
     card.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 296))}px`;
     card.style.top = `${r.bottom + 8}px`;
