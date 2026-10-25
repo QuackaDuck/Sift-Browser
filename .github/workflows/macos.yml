@@ -3,7 +3,9 @@ name: macOS build
 on:
   workflow_dispatch:
   push:
-    branches: [claude/eager-newton-6day03]
+    branches: [main]
+    paths: [native/**, app/**, scripts/**, .github/workflows/macos.yml]
+  pull_request:
     paths: [native/**, app/**, scripts/**, .github/workflows/macos.yml]
 
 jobs:
@@ -43,11 +45,17 @@ jobs:
       - name: Smoke test
         run: |
           app="${{ steps.app.outputs.path }}"
-          "$app/Contents/MacOS/Sift" https://en.wikipedia.org/wiki/Typography > sift.log 2>&1 &
+          "$app/Contents/MacOS/Sift" --remote-debugging-port=9222 https://en.wikipedia.org/wiki/Typography > sift.log 2>&1 &
           pid=$!
-          sleep 20
+          sleep 25
           screencapture -x smoke.png || true
-          if kill -0 $pid 2>/dev/null; then echo "Sift is running"; kill $pid; else echo "Sift exited early"; cat sift.log; exit 1; fi
+          curl -s http://127.0.0.1:9222/json/list > targets.json || true
+          cat targets.json
+          if ! kill -0 $pid 2>/dev/null; then echo "Sift exited early"; cat sift.log; exit 1; fi
+          kill $pid
+          # The UI page must have loaded, and the web page with it.
+          grep -q 'sift://app/index.html' targets.json || { echo "Sift UI did not load"; exit 1; }
+          grep -q 'wikipedia.org' targets.json || { echo "Web content did not load"; exit 1; }
           tail -40 sift.log || true
 
       - name: Package
@@ -65,4 +73,5 @@ jobs:
           path: |
             smoke.png
             sift.log
+            targets.json
           if-no-files-found: ignore
