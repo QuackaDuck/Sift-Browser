@@ -102,6 +102,9 @@ class SiftWindow : public CefWindowDelegate, public CefMessageRouterBrowserSide:
   bool IsFrameless(CefRefPtr<CefWindow> window) override { return true; }
 #endif
   CefSize GetMinimumSize(CefRefPtr<CefView> view) override { return CefSize(480, 320); }
+  // Like Safari and Chrome, a click on an inactive window acts as well as
+  // activating it (e.g. selects the tab you clicked).
+  cef_state_t AcceptsFirstMouse(CefRefPtr<CefWindow> window) override { return STATE_ENABLED; }
   cef_runtime_style_t GetWindowRuntimeStyle() override { return CEF_RUNTIME_STYLE_ALLOY; }
   bool OnKeyEvent(CefRefPtr<CefWindow> window, const CefKeyEvent& event) override;
 

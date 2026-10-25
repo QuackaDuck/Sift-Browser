@@ -136,9 +136,12 @@ export class Layer {
     const imgs = [];
     for (const r of rects) {
       const shot = (shots || []).find((s) => s.id === r.id);
-      if (!shot) continue;
+      // A capture can fail (e.g. the window is covered); the tab's last
+      // thumbnail is a better backdrop than an empty pane.
+      const data = shot?.data || this.browser.tab(r.id)?.thumbnail;
+      if (!data) continue;
       const img = new Image();
-      img.src = shot.data;
+      img.src = data;
       // Height follows the capture's aspect ratio: while the UI is only the
       // strip, it can't measure the window height itself.
       Object.assign(img.style, { left: `${r.x}px`, top: `${r.y - this.browser.chromeHeight}px`, width: `${r.w}px`, height: 'auto' });
