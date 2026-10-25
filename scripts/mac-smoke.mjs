@@ -114,6 +114,13 @@ check(results.surface === 'cover' && results.rows > 0, `address bar results show
 shot('omnibox.png');
 execFileSync('cliclick', ['kp:esc', 'kp:esc', 'kp:esc']);
 await sleep(600);
+// Escape hands focus back to the page without focusing a link in it (no
+// stray focus ring on e.g. Wikipedia's "Jump to content").
+const ring = await Promise.all(webPages.map((p) => p.evaluate(() => {
+  const el = document.activeElement;
+  return el && el !== document.body && el.matches(':focus-visible') ? el.textContent.trim().slice(0, 40) : '';
+}).catch(() => '')));
+check(ring.every((t) => !t), `no focus ring in the page after Escape${ring.find(Boolean) ? ` (on "${ring.find(Boolean)}")` : ''}`);
 
 // Hover the close button so the native glyphs show, for a person to check.
 execFileSync('cliclick', [`m:${Math.round(geo.sx + 20)},${Math.round(lightsY ?? geo.sy + geo.rowMid)}`]);

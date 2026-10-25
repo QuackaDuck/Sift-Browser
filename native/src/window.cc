@@ -687,8 +687,8 @@ void SiftWindow::OnUiBrowserClosed() {
 
 void SiftWindow::FocusUi() {
   if (!ui_view_ || !ui_browser_) return;
-  MakeKeyWindowFor(ui_browser_->GetHost()->GetWindowHandle());
   ui_view_->RequestFocus();
+  MakeKeyWindowFor(ui_browser_->GetHost()->GetWindowHandle());
   ui_browser_->GetHost()->SetFocus(true);
 }
 
@@ -923,8 +923,11 @@ bool SiftWindow::Dispatch(const std::string& cmd, Args args, QueryCallback cb) {
   }
   if (cmd == "tab.focus") {
     if (tab && tab->view && surface_ == "strip") {
-      if (host) MakeKeyWindowFor(host->GetWindowHandle());
+      // Focus the view before activating its window: a window activated with
+      // nothing focused moves focus as if by Tab, which focuses the page's
+      // first link (e.g. a "skip to content" link).
       tab->view->RequestFocus();
+      if (host) MakeKeyWindowFor(host->GetWindowHandle());
       if (host) host->SetFocus(true);
     }
     cb->Success("true");
