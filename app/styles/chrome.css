@@ -47,7 +47,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
   position: relative;
   display: inline-grid; place-items: center;
   width: 30px; height: 30px;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   color: var(--text-2);
   transition: background-color var(--d-fast) linear, color var(--d-fast) linear, transform var(--d-fast) var(--ease-out);
 }
@@ -56,7 +56,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 .ibtn:active { background: var(--bg-4); transform: scale(0.96); }
 .ibtn[disabled], .ibtn.is-disabled { color: var(--text-4); pointer-events: none; }
 .ibtn.is-on { color: var(--accent); }
-.ibtn.sm { width: 22px; height: 22px; border-radius: var(--r-sm); }
+.ibtn.sm { width: 24px; height: 24px; }
 .ibtn.sm svg { width: 14px; height: 14px; }
 .ibtn .badge {
   position: absolute; right: 3px; top: 3px;
@@ -127,8 +127,8 @@ input::selection, textarea::selection, .selectable::selection { background: var(
   height: 30px;
   display: flex; align-items: center;
   gap: 8px;
-  padding: 0 6px 0 10px;
-  border-radius: var(--r-md);
+  padding: 0 6px 0 11px;
+  border-radius: 11px;
   color: var(--text-2);
   transition: background-color var(--d-fast) linear, color var(--d-fast) linear;
   contain: layout paint;
@@ -209,7 +209,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
   flex: none;
   width: 20px; height: 20px;
   display: grid; place-items: center;
-  border-radius: 5px;
+  border-radius: 50%;
   color: var(--text-3);
   opacity: 0;
   transition: opacity var(--d-fast) linear, background-color var(--d-fast) linear;
@@ -279,7 +279,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
   min-width: 200px;
   height: 32px;
   display: flex; align-items: center;
-  border-radius: 9px;
+  border-radius: var(--r-pill);
   background: var(--field);
   box-shadow: inset 0 0 0 1px var(--line);
   transition: box-shadow var(--d-fast) linear, background-color var(--d-fast) linear;
@@ -289,15 +289,14 @@ input::selection, textarea::selection, .selectable::selection { background: var(
   background: var(--field-focus);
   box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 3px var(--accent-dim);
 }
-.omnibox.is-open { border-bottom-left-radius: 9px; border-bottom-right-radius: 9px; }
 
 .site-btn {
   flex: none;
   height: 24px;
   margin-left: 4px;
-  padding: 0 6px;
+  padding: 0 7px;
   display: flex; align-items: center; gap: 5px;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   color: var(--text-2);
   font: 500 var(--t-xs)/1 var(--mono);
 }
@@ -308,9 +307,9 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 .site-btn .count { color: var(--accent); }
 .mode-chip {
   flex: none;
-  height: 22px; margin-left: 5px; padding: 0 8px;
+  height: 22px; margin-left: 5px; padding: 0 9px;
   display: flex; align-items: center; gap: 5px;
-  border-radius: 6px;
+  border-radius: var(--r-pill);
   background: var(--accent-dim);
   color: var(--accent);
   font: 500 var(--t-sm)/1 var(--font);
@@ -321,7 +320,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 .omni-input, .omni-display {
   position: absolute; inset: 0;
   width: 100%;
-  padding: 0 8px 0 6px;
+  padding: 0 10px 0 4px;
   border: 0;
   background: transparent;
   font-size: var(--t-lg);
@@ -346,8 +345,8 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 .omni-actions { display: flex; align-items: center; gap: 1px; padding-right: 3px; }
 .omni-actions .ibtn { width: 26px; height: 26px; }
 .zoom-chip {
-  height: 20px; padding: 0 6px; margin-right: 2px;
-  border-radius: 5px;
+  height: 20px; padding: 0 7px; margin-right: 2px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line-2);
   color: var(--text-2);
   font: 500 var(--t-xs)/18px var(--mono);
@@ -374,9 +373,9 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 /* Inline notice in the toolbar: Sift's toasts live in the chrome, not over the page. */
 .notice {
   display: flex; align-items: center; gap: 8px;
-  height: 28px; padding: 0 4px 0 10px;
+  height: 28px; padding: 0 4px 0 12px;
   margin-left: 4px;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   background: var(--bg-3);
   box-shadow: inset 0 0 0 1px var(--line-2);
   color: var(--text-1);
@@ -386,7 +385,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 }
 .notice svg { width: 14px; height: 14px; color: var(--accent); }
 .notice button {
-  height: 22px; padding: 0 8px; border-radius: 5px;
+  height: 22px; padding: 0 9px; border-radius: var(--r-pill);
   color: var(--accent); font-weight: 500;
 }
 .notice button:hover { background: var(--accent-dim); }
@@ -410,8 +409,8 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 @keyframes row-in { from { opacity: 0; transform: translateY(-4px); } }
 .findbar .field {
   display: flex; align-items: center; gap: 6px;
-  width: 320px; height: 28px; padding: 0 8px;
-  border-radius: var(--r-md);
+  width: 320px; height: 28px; padding: 0 10px;
+  border-radius: var(--r-pill);
   background: var(--field-focus);
   box-shadow: inset 0 0 0 1px var(--accent-line), 0 0 0 3px var(--accent-dim);
 }
@@ -460,3 +459,7 @@ input::selection, textarea::selection, .selectable::selection { background: var(
 .pane-grip i { width: 4px; height: 16px; border-radius: 2px; background: var(--line-3); transition: background-color var(--d-fast) linear, height var(--d-fast) var(--ease-out); }
 .pane-grip:hover i, .pane-grip.is-dragging i { background: var(--accent); height: 20px; }
 .pane-tools { position: absolute; right: 6px; top: 0; display: flex; gap: 2px; }
+
+/* Fields draw their own focus ring on the container. */
+.omni-input:focus-visible, .ntp-search input:focus-visible, .ts-head input:focus-visible,
+.findbar input:focus-visible, .text-input:focus-visible, .moment .name input:focus-visible { outline: none; }

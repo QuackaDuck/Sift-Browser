@@ -137,6 +137,15 @@ void ContentClient::Emit(CefRefPtr<CefDictionaryValue> data) {
   if (window_) window_->EmitTab(tab_id_, data);
 }
 
+// --- Focus ------------------------------------------------------------------
+
+void ContentClient::OnGotFocus(CefRefPtr<CefBrowser> browser) {
+  if (!window_) return;
+  auto d = NewDict();
+  d->SetString("id", tab_id_);
+  window_->Emit("tab.focused", d);
+}
+
 // --- Display ----------------------------------------------------------------
 
 void ContentClient::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url) {

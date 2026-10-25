@@ -43,11 +43,13 @@
   --toolbar-h: 42px;
   --findbar-h: 38px;
   --panebar-h: 30px;
-  --r-xs: 4px;
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 11px;
-  --r-xl: 14px;
+  --r-xs: 5px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-pill: 999px;
+  --label: 500 12px/1.2 var(--font);
 
   /* Motion: quick, physical, never blocking. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

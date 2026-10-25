@@ -24,7 +24,8 @@ class ContentClient : public CefClient,
                       public CefRequestHandler,
                       public CefResourceRequestHandler,
                       public CefFindHandler,
-                      public CefContextMenuHandler {
+                      public CefContextMenuHandler,
+                      public CefFocusHandler {
  public:
   ContentClient(CefRefPtr<SiftWindow> window, const std::string& tab_id);
   const std::string& tab_id() const { return tab_id_; }
@@ -39,6 +40,10 @@ class ContentClient : public CefClient,
   CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
   CefRefPtr<CefFindHandler> GetFindHandler() override { return this; }
   CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
+  CefRefPtr<CefFocusHandler> GetFocusHandler() override { return this; }
+
+  // Focus
+  void OnGotFocus(CefRefPtr<CefBrowser> browser) override;
 
   // Display
   void OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url) override;

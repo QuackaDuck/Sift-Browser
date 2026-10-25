@@ -6,6 +6,7 @@
 #include "include/cef_parser.h"
 #include "include/cef_urlrequest.h"
 #include "include/cef_version.h"
+#include "include/views/cef_button_delegate.h"
 #include "include/views/cef_display.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
@@ -73,6 +74,13 @@ class TabViewDelegate : public CefBrowserViewDelegate {
  private:
   SiftWindow* window_;
   IMPLEMENT_REFCOUNTING(TabViewDelegate);
+};
+
+// The link-hover status label is a non-interactive button; CEF requires a delegate.
+class StatusDelegate : public CefButtonDelegate {
+ public:
+  void OnButtonPressed(CefRefPtr<CefButton> button) override {}
+  IMPLEMENT_REFCOUNTING(StatusDelegate);
 };
 
 class UiViewDelegate : public CefBrowserViewDelegate {
@@ -243,7 +251,7 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
 
   // Link-hover status text: a native overlay so it can sit over web content
   // without growing the UI surface.
-  status_ = CefLabelButton::CreateLabelButton(nullptr, "");
+  status_ = CefLabelButton::CreateLabelButton(new StatusDelegate(), "");
   status_->SetBackgroundColor(0xF0181A1E);
   status_->SetTextColor(CEF_BUTTON_STATE_NORMAL, 0xFFB9BCC3);
   status_->SetFontList("Inter, Segoe UI, Helvetica, 12px");
