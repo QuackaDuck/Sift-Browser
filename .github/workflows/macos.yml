@@ -49,6 +49,16 @@ jobs:
         # Not notarized. Apple Silicon requires at least an ad-hoc signature.
         run: codesign --force --deep --sign - "${{ steps.app.outputs.path }}"
 
+      # Packaged before the smoke test, so a build is available even when a
+      # check fails.
+      - name: Package
+        run: ditto -c -k --sequesterRsrc --keepParent "${{ steps.app.outputs.path }}" Sift-macos-arm64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sift-macos-arm64
+          path: Sift-macos-arm64.zip
+
       - name: Smoke test
         run: |
           brew install cliclick >/dev/null
@@ -68,14 +78,6 @@ jobs:
           node scripts/mac-smoke.mjs
           kill $pid
           tail -40 sift.log || true
-
-      - name: Package
-        run: ditto -c -k --sequesterRsrc --keepParent "${{ steps.app.outputs.path }}" Sift-macos-arm64.zip
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Sift-macos-arm64
-          path: Sift-macos-arm64.zip
 
       - uses: actions/upload-artifact@v4
         if: always()
