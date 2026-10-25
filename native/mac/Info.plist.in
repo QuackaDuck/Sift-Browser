@@ -5,7 +5,7 @@
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleDisplayName</key><string>Sift</string>
   <key>CFBundleExecutable</key><string>${EXECUTABLE_NAME}</string>
-  <key>CFBundleIconFile</key><string>Sift.icns</string>
+  <key>CFBundleIconFile</key><string>Sift</string>
   <key>CFBundleIdentifier</key><string>app.sift.browser</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>Sift</string>

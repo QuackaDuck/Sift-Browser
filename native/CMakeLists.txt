@@ -69,23 +69,31 @@ if(OS_WINDOWS)
 endif()
 
 if(OS_MAC)
-  # App bundle plus the four helper bundles CEF requires on macOS.
-  set(SIFT_APP "${CEF_TARGET_OUT_DIR}/Sift.app")
+  # Sift.app plus the helper apps CEF requires on macOS, laid out like CEF's
+  # cefsimple sample. Build with the Xcode generator:
+  #   cmake -G Xcode -S native -B build -DPROJECT_ARCH=arm64
   set(SIFT_HELPER_TARGET "sift_helper")
   set(SIFT_HELPER_OUTPUT_NAME "Sift Helper")
+  set(SIFT_APP "${CEF_TARGET_OUT_DIR}/Sift.app")
 
-  add_executable(sift MACOSX_BUNDLE ${SIFT_COMMON_SRCS} src/main_mac.mm)
+  # Info.plist placeholders are filled here, not by Xcode.
+  set(_main_plist "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in" _plist_contents)
+  string(REPLACE "\${EXECUTABLE_NAME}" "Sift" _plist_contents "${_plist_contents}")
+  file(WRITE "${_main_plist}" "${_plist_contents}")
+
+  add_executable(sift MACOSX_BUNDLE ${SIFT_COMMON_SRCS} src/main_mac.mm mac/Sift.icns)
   SET_EXECUTABLE_TARGET_PROPERTIES(sift)
   add_dependencies(sift libcef_dll_wrapper)
   target_link_libraries(sift libcef_dll_wrapper ${CEF_STANDARD_LIBS} "-framework Cocoa")
+  set_source_files_properties(mac/Sift.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
   set_target_properties(sift PROPERTIES
     OUTPUT_NAME "Sift"
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/mac/Info.plist.in"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "app.sift.browser")
+    MACOSX_BUNDLE_INFO_PLIST "${_main_plist}"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "app.sift.browser")
+
+  COPY_MAC_FRAMEWORK(sift "${CEF_BINARY_DIR}" "${SIFT_APP}")
   add_custom_command(TARGET sift POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CEF_BINARY_DIR}/Chromium Embedded Framework.framework"
-            "${SIFT_APP}/Contents/Frameworks/Chromium Embedded Framework.framework"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${SIFT_APP_DIR}" "${SIFT_APP}/Contents/Resources/app"
     VERBATIM)
 
@@ -98,18 +106,18 @@ if(OS_MAC)
     set(_helper_output_name "${SIFT_HELPER_OUTPUT_NAME}${_name_suffix}")
     set(_helper_info_plist "${CMAKE_CURRENT_BINARY_DIR}/helper-Info${_target_suffix}.plist")
     file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mac/helper-Info.plist.in" _plist_contents)
-    string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
-    string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents ${_plist_contents})
-    string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents ${_plist_contents})
-    file(WRITE ${_helper_info_plist} ${_plist_contents})
+    string(REPLACE "\${EXECUTABLE_NAME}" "${_helper_output_name}" _plist_contents "${_plist_contents}")
+    string(REPLACE "\${PRODUCT_NAME}" "${_helper_output_name}" _plist_contents "${_plist_contents}")
+    string(REPLACE "\${BUNDLE_ID_SUFFIX}" "${_plist_suffix}" _plist_contents "${_plist_contents}")
+    file(WRITE "${_helper_info_plist}" "${_plist_contents}")
 
     add_executable(${_helper_target} MACOSX_BUNDLE ${SIFT_COMMON_SRCS} src/process_helper_mac.cc)
     SET_EXECUTABLE_TARGET_PROPERTIES(${_helper_target})
     add_dependencies(${_helper_target} libcef_dll_wrapper)
     target_link_libraries(${_helper_target} libcef_dll_wrapper ${CEF_STANDARD_LIBS})
     set_target_properties(${_helper_target} PROPERTIES
-      MACOSX_BUNDLE_INFO_PLIST ${_helper_info_plist}
-      OUTPUT_NAME ${_helper_output_name})
+      MACOSX_BUNDLE_INFO_PLIST "${_helper_info_plist}"
+      OUTPUT_NAME "${_helper_output_name}")
     add_dependencies(sift "${_helper_target}")
     add_custom_command(TARGET sift POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_directory
