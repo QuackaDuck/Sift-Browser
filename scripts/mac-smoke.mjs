@@ -94,9 +94,16 @@ check(focused.some(Boolean), 'a click in the page gives the page focus');
 img = grab();
 check(closeButtonY(img, scale, { x: geo.sx, y: geo.sy, w: 60, h: 70 }) !== null, 'window still looks active while the page has focus');
 
-// 4. Address bar results appear over the page.
-click(geo.sx + geo.addr.x, geo.sy + geo.addr.y);
-await sleep(300);
+// 4. Address bar results appear over the page. CI machines sometimes show a
+// system prompt that takes keyboard focus, so make sure the address bar has
+// it before typing.
+let addressFocused = false;
+for (let i = 0; i < 3 && !addressFocused; i++) {
+  click(geo.sx + geo.addr.x, geo.sy + geo.addr.y);
+  await sleep(400);
+  addressFocused = await page.evaluate(() => document.hasFocus() && document.activeElement?.id === 'address');
+}
+check(addressFocused, 'a click in the address bar focuses it');
 execFileSync('cliclick', ['t:exam']);
 await sleep(900);
 const results = await page.evaluate(() => ({

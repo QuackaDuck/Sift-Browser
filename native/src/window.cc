@@ -213,6 +213,7 @@ void ConfigureNativeWindow(CefRefPtr<CefWindow> window) {}
 bool UsesLiquidGlassTitlebar() { return false; }
 int TrafficLightsRight(CefRefPtr<CefWindow> window) { return 0; }
 void MakeKeyWindowFor(CefWindowHandle handle) {}
+void AlignTrafficLights(CefRefPtr<CefWindow> window, float center, float* titlebar_height) {}
 #endif
 
 void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
@@ -271,6 +272,7 @@ void SiftWindow::OnWindowCreated(CefRefPtr<CefWindow> window) {
   ApplySurface();
   window_->Show();
   ConfigureNativeWindow(window_);
+  AlignTrafficLights(window_, tabrow_height_ / 2.0f, &titlebar_height_);
   ui_view_->RequestFocus();
 }
 
@@ -817,7 +819,11 @@ bool SiftWindow::Dispatch(const std::string& cmd, Args args, QueryCallback cb) {
   if (cmd == "layout") {
     layout_known_ = true;
     chrome_height_ = std::clamp(static_cast<int>(NumberArg(args, "top", chrome_height_)), 0, 400);
-    tabrow_height_ = std::clamp(static_cast<int>(NumberArg(args, "tabrow", tabrow_height_)), 24, 80);
+    const int tabrow = std::clamp(static_cast<int>(NumberArg(args, "tabrow", tabrow_height_)), 24, 80);
+    if (tabrow != tabrow_height_) {
+      tabrow_height_ = tabrow;
+      AlignTrafficLights(window_, tabrow_height_ / 2.0f, &titlebar_height_);
+    }
     ratio_ = NumberArg(args, "ratio", ratio_);
     panes_.clear();
     if (CefRefPtr<CefListValue> panes = args->GetList("panes")) {

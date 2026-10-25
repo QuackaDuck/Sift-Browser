@@ -14,8 +14,8 @@
 - **Lines over shadows.** Structure comes from hairlines and value steps. Shadows appear only on things that float: the active tab, menus, previews, tab search.
 - **Rounded, not bubbly.** Fields, buttons, segmented controls and toggles are pills; icon buttons are circles; tabs use 11px corners; panels 18px.
 - **Type.** The system font: SF Pro on macOS, Segoe UI Variable on Windows, and bundled Inter on Linux. There is no monospace anywhere. Chrome text stays at 13px or below; headings are sentence case at weight 600.
-- **Icons.** A custom 16px set (`app/src/ui/icons.js`) with 1.4px strokes and round joins. The Sift mark is three bars of narrowing width, like a sieve.
-- **A real Mac window** with native traffic lights, corners and shadow. Sift's tab row sits in the transparent title bar.
+- **Icons.** A custom 16px set (`app/src/ui/icons.js`) with 1.4px strokes and round joins. The Sift mark is a planet at the edge of its light: a dark sphere with its sunlit limb at the top right, in greys only (`app/assets/icon.svg`).
+- **A real Mac window** with native traffic lights, corners and shadow, built against the macOS 26 SDK so it gets the Liquid Glass design. Sift's tab row is the title bar, and the traffic lights centre on it.
 
 ## Motion
 
@@ -23,6 +23,7 @@
 - **Tabs open by growing and close by collapsing,** and their neighbours slide over to make room.
 - **The New Tab page settles in:** the search box, sections and site tiles fade up in a short stagger. It only animates when you arrive, not when its data refreshes.
 - **Panels and the address bar results** scale in from just under their anchor (220 ms) and fade out faster than they arrive. Tab search grows from the centre.
+- **The UI never resizes.** Opening a menu, the address bar results or New Tab only shows or hides the web page above the UI, so animations stay smooth.
 - **Never in the way.** Nothing animates on navigation, and keyboard input is never delayed. Reduced-motion users get 1 ms durations.
 - **Previews feel warm.** The first hover waits 520 ms; moving to the next tab within 700 ms shows its preview immediately.
 

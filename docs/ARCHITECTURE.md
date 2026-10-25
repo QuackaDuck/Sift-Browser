@@ -10,14 +10,15 @@ The UI is itself a Chromium page, loaded from `sift://app/index.html` into a ded
 ## Window layout
 
 ```
-CefWindow  (vertical BoxLayout)
-├── UI browser        sift://app; height = the chrome strip (tab row + toolbar [+ find bar] [+ split bar])
-├── content panel     horizontal BoxLayout: [pane A] [6px divider] [pane B]
+CefWindow
+├── UI browser        sift://app; fills the window and never resizes
+├── overlay: content  below the chrome strip (tab row + toolbar [+ find bar] [+ split bar])
+│                     horizontal BoxLayout: [pane A] [6px divider] [pane B]
 │                     one CefBrowserView per tab; only the visible pane(s) are shown
 └── overlay: status   native label for link-hover URLs (bottom left)
 ```
 
-On macOS the window is a standard titled `NSWindow`, so it gets the native corners, shadow, traffic lights, resizing and full screen. `window_mac.mm` makes the title bar transparent and lets the content run underneath it, with an empty compact toolbar so the traffic lights centre on the tab row. On Windows and Linux the window is frameless and Sift draws the window controls.
+On macOS the window is a standard titled `NSWindow`, so it gets the native corners, shadow, traffic lights, resizing and full screen. It is built against the macOS 26 SDK, which gives it the Liquid Glass design; Sift's own title-bar sizes switch to Liquid Glass metrics on macOS 27 and later (an `NSProcessInfo` check). `window_mac.mm` makes the title bar transparent and lets the content run underneath it. The title bar is as tall as the tab row (`GetTitlebarHeight`), so the traffic lights centre on the tabs, and the UI is told where the lights end so the tabs start after them. On Windows and Linux the window is frameless and Sift draws the window controls.
 
 Tabs use CEF's **Alloy** runtime style. CEF allows only one Chrome-style browser view per window, and a browser needs several (each tab, plus the UI). The cost is that Chrome-only features (extensions, Chrome's password manager and autofill UI) aren't available.
 
@@ -25,23 +26,17 @@ Tabs use CEF's **Alloy** runtime style. CEF allows only one Chrome-style browser
 
 | Surface | Layout | Used for |
 | --- | --- | --- |
-| `strip` | UI at strip height, web content below | normal browsing |
-| `cover` | UI fills the window; content panel hidden behind a snapshot of itself | address bar results, menus, tab search, Moments, previews, prompts, tab drag |
-| `full` | UI fills the window; no content | Sift's own pages (New Tab, Settings, Library) |
+| `strip` | web content shown below the chrome strip | normal browsing |
+| `cover` | web content hidden behind a snapshot of itself | address bar results, menus, tab search, Moments, previews, prompts, tab drag |
+| `full` | web content hidden | Sift's own pages (New Tab, Settings, Library) |
 
 Going from `strip` to `cover`:
 
 1. The UI asks the host for a `snapshot`. The host captures each visible pane with `Page.captureScreenshot` over the DevTools protocol, which takes about 80 ms.
 2. The UI paints the captures as a backdrop in the exact pane rectangles.
-3. The UI asks for `surface: cover`. The host hides the content panel and lets the UI take the whole window. The picture is identical, so nothing visibly changes except the panel appearing.
+3. After the backdrop has reached the screen, the UI asks for `surface: cover` and the host hides the content overlay. The picture is identical, so nothing visibly changes except the panel appearing.
 
-Earlier versions put the UI in a CEF overlay instead. On macOS overlays are child windows stacked above the main window, and they hid the native traffic lights, so the UI is now an ordinary child view.
-
-Growing the UI view has side effects that the UI handles explicitly:
-
-- **Compositor animations stall.** An animation that started while the view was strip-sized doesn't resume, so the scrim waits for the cover.
-- **Pointer capture is lost.** Tab drags therefore listen on `window`.
-- **Synthetic pointer events arrive.** Chromium sends a pointer leave and a pointer move to the window centre, so hover previews ignore pointer events for a short settle period.
+The UI never changes size. Earlier versions resized the UI browser to switch surfaces, which cost a relayout and a stale frame each time, stalled compositor animations and dropped pointer capture. The content overlay leaves the tab row alone, so on macOS, where overlays are child windows, it never covers the traffic lights. The host keeps it hidden until the UI first reports its layout, so pages never load at the wrong size.
 
 ## The bridge
 
@@ -102,6 +97,7 @@ All of it is in the UI's `Browser` controller (`app/src/browser.js`) and written
 
 - **Closing a tab closes only its browser.** `DoClose` returns true unless the window itself is closing; returning false would make CEF close the whole window.
 - **Chained DevTools calls are posted.** DevTools results arrive in an observer callback, and a continuation that issues another call there trips a re-entrancy check, so continuations run in a posted task.
+- **Focus crosses windows on macOS.** Web content is in a child window, so moving focus between the page and the UI also makes the right window key (`MakeKeyWindowFor`).
 - **Flex changes need an invalidate.** Changing box-layout flex values doesn't re-lay out on its own, so `ApplyLayout` invalidates the content panel.
 - **Views given a preferred size need a non-zero width.** CEF treats a size with a zero side as "no preference".
 - **Label buttons need a delegate.** `CefLabelButton` must be created with a delegate; passing null crashes.

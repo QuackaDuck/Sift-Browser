@@ -8,6 +8,7 @@
 // classic sizes.
 #import <Cocoa/Cocoa.h>
 
+#include <algorithm>
 #include <cmath>
 
 #include "window.h"
@@ -36,6 +37,36 @@ void ConfigureNativeWindow(CefRefPtr<CefWindow> window) {
   nswindow.titleVisibility = NSWindowTitleHidden;
   // The tab row is the title bar; no line under it.
   nswindow.titlebarSeparatorStyle = NSTitlebarSeparatorStyleNone;
+}
+
+namespace {
+
+// Vertical centre of the close button, from the top of the window, in points.
+CGFloat CloseButtonCenter(NSWindow* nswindow) {
+  NSButton* close = [nswindow standardWindowButton:NSWindowCloseButton];
+  if (!close || !close.superview) return -1;
+  const NSRect frame = [close convertRect:close.bounds toView:nil];
+  return nswindow.frame.size.height - NSMidY(frame);
+}
+
+}  // namespace
+
+void AlignTrafficLights(CefRefPtr<CefWindow> window, float center, float* titlebar_height) {
+  NSWindow* nswindow = NativeWindow(window);
+  NSView* frame = nswindow.contentView.superview;
+  if (!frame) return;
+  // Where AppKit puts the buttons within a title bar of a given height
+  // differs between releases (Liquid Glass buttons sit lower), so measure
+  // and correct rather than assume. The window asks for the height again on
+  // the next layout.
+  for (int i = 0; i < 3; ++i) {
+    [frame setNeedsLayout:YES];
+    [frame layoutSubtreeIfNeeded];
+    const CGFloat actual = CloseButtonCenter(nswindow);
+    NSLog(@"Sift: title bar %.1f, traffic lights at %.1f, tab row centre %.1f", *titlebar_height, actual, center);
+    if (actual < 0 || std::fabs(actual - center) < 0.5) return;
+    *titlebar_height = std::max(16.0f, *titlebar_height + 2 * static_cast<float>(center - actual));
+  }
 }
 
 int TrafficLightsRight(CefRefPtr<CefWindow> window) {
